@@ -1,0 +1,45 @@
+from PIL import Image, ImageEnhance
+import argparse
+import os
+from decode_ascii import decode_bidfile_ascii
+
+
+def encode_bidfile(file_model, width_result, height_result, model_ascii=1, display_ascii=True):
+    image = Image.open(file_model).convert("L")
+    enhancer = ImageEnhance.Contrast(image)
+    image = enhancer.enhance(2.0)
+
+    file_model_extension = (os.path.splitext(file_model))[1]
+    file_bid = file_model.replace(file_model_extension, '.bid')
+    width, height = image.size
+    width_scale = int(width/width_result)
+    height_scale = int(height/height_result)
+    image = image.resize((int(width/width_scale), int(height/height_scale)), Image.Resampling.LANCZOS)
+    
+    threshold = 128  # Seuil N&B
+    binary_data = []
+    for y in range(image.height):
+        row = []
+        for x in range(image.width):
+            pixel = image.getpixel((x, y))
+            row.append(1 if pixel < threshold else 0)
+        binary_data.append(row)
+    
+    with open(file_bid, "w") as f:
+        for row in binary_data:
+            f.write("".join(map(str, row)) + "\n")
+
+    if display_ascii:
+        decode_bidfile_ascii(file_bid, model_ascii)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='path image')
+    parser.add_argument('--path_file', action="store", dest='path_file', default='test.jpeg')
+    parser.add_argument('--width_result', action="store", dest='width_result')
+    parser.add_argument('--height_result', action="store", dest='height_result')
+    args = parser.parse_args()
+    path_file = args.path_file
+    width_result = int(args.width_result)
+    height_result = int(args.height_result)
+    encode_bidfile(path_file, width_result, height_result)

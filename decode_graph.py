@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+from decode_ascii import decode_bidfile_ascii
+
 
 def draw_cellule(ax, x, y, cell_type):
     if cell_type == 0:  # ▯ (carré blanc) ok
@@ -16,7 +18,8 @@ def draw_cellule(ax, x, y, cell_type):
     elif cell_type == 6:  # ◣ (triangle en bas à gauche)
         ax.fill([x, x, x+1], [y, y+1, y+1], color="black")
 
-def decode_bidfile_graph(file_model, model_ascii=1, display_ascii=True):
+
+def decode_bidfile_graph(file_model, model_ascii, display_ascii=True):
     if display_ascii:
         decode_bidfile_ascii(file_model, model_ascii)
     with open(file_model, 'r') as text_file:
@@ -41,25 +44,12 @@ def decode_bidfile_graph(file_model, model_ascii=1, display_ascii=True):
     plt.gca().invert_yaxis()
     plt.show()
 
-def decode_bidfile_ascii(file_model, model_ascii):
-    with open(file_model) as text_file:
-        lines = text_file.readlines()
-    if model_ascii == 1:
-        chart_ascii="▉  ▛▙▟▜"
-    elif model_ascii == 2:
-        chart_ascii="▩  ◤◣◢◥"
-    print('┌' + '─' * (len(lines[0]) + 1) + '┐')
-    for line in lines:
-        print('│ ', end="")
-        for car in line:
-            if car != "\n":
-                print(chart_ascii[int(car)], end="")
-        print(' │')
-    print('└' + '─' * (len(lines[0]) + 1) + '┘')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_file', action="store", dest='path_file')
+    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
     args = parser.parse_args()
     path_file = args.path_file
-    decode_bidfile_graph(path_file)
+    model_ascii = int(args.model_ascii)
+    decode_bidfile_graph(path_file, model_ascii)
