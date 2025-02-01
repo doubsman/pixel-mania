@@ -1,7 +1,7 @@
 import argparse
 from PIL import Image, ImageDraw
 import os
-from decode_ascii import decode_bidfile_ascii
+from bid2ascii import decode_bidfile_ascii
 
 
 def draw_cellule(draw, x, y, cell_type, image_size):
@@ -50,9 +50,10 @@ def decode_bidfile_image(file_model, image_scale=100, model_ascii=1, display_ima
             cell = grid[y][x]
             draw_cellule(draw, x, y, cell, image_scale)
 
-    file_model_extension = (os.path.splitext(file_model))[1]
-    file_bid = file_model.replace(file_model_extension, f'_{image_width}x{image_height}.png')
-    image.save(file_bid)
+    filename_img = os.path.splitext(os.path.basename(file_model))[0]
+    filename_img += f'_{image_width}x{image_height}.png'
+    file_img = os.path.join('export', filename_img)
+    image.save(file_img)
     if display_image:
         decode_bidfile_ascii(file_model, model_ascii)
         image.show()

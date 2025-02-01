@@ -1,7 +1,7 @@
 from PIL import Image, ImageEnhance
 import argparse
 import os
-from decode_ascii import decode_bidfile_ascii
+from bid2ascii import decode_bidfile_ascii
 
 
 def encode_bidfile(file_model, width_result, height_result, model_ascii=1, display_ascii=True):
@@ -9,8 +9,8 @@ def encode_bidfile(file_model, width_result, height_result, model_ascii=1, displ
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2.0)
 
-    file_model_extension = (os.path.splitext(file_model))[1]
-    file_bid = file_model.replace(file_model_extension, '.bid')
+    filename_img = os.path.splitext(os.path.basename(file_model))[0] + '.bid'
+    file_bid =  os.path.join('bid', filename_img)
     width, height = image.size
     width_scale = int(width/width_result)
     height_scale = int(height/height_result)

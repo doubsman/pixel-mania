@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
-from decode_ascii import decode_bidfile_ascii
+from bid2ascii import decode_bidfile_ascii
 
 
 def draw_cellule(ax, x, y, cell_type):
