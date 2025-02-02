@@ -1,5 +1,6 @@
 import argparse
 
+
 def decode_bidfile_ascii(file_model, model_ascii):
     with open(file_model) as text_file:
         lines = text_file.readlines()
@@ -25,7 +26,7 @@ def decode_bidfile_ascii(file_model, model_ascii):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_file', action="store", dest='path_file')
-    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=2)
+    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
     args = parser.parse_args()
     path_file = args.path_file
     model_ascii = int(args.model_ascii)

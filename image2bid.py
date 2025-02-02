@@ -4,7 +4,7 @@ import os
 from bid2ascii import decode_bidfile_ascii
 
 
-def encode_bidfile(file_model, width_result, height_result, model_ascii=1, display_ascii=True):
+def encode_bidfile(file_model, width_result, height_result, model_ascii, display_ascii):
     image = Image.open(file_model).convert("L")
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2.0)
@@ -38,8 +38,12 @@ if __name__ == '__main__':
     parser.add_argument('--path_file', action="store", dest='path_file', default='test.jpeg')
     parser.add_argument('--width_result', action="store", dest='width_result')
     parser.add_argument('--height_result', action="store", dest='height_result')
+    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
+    parser.add_argument('--display_ascii', action="store", dest='display_ascii', default=False)
     args = parser.parse_args()
     path_file = args.path_file
     width_result = int(args.width_result)
     height_result = int(args.height_result)
-    encode_bidfile(path_file, width_result, height_result)
+    model_ascii = int(args.model_ascii)
+    display_ascii = int(args.display_ascii)
+    encode_bidfile(path_file, width_result, height_result, model_ascii, display_ascii)
