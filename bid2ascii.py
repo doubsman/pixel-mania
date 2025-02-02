@@ -5,7 +5,7 @@ def decode_bidfile_ascii(file_model, model_ascii):
     with open(file_model) as text_file:
         lines = text_file.readlines()
     if model_ascii == 1:
-        chart_ascii="▉▉    ▛▘▙▖▗▟ ▝▜"
+        chart_ascii="▉▉    ▛▘▙▖▗▟▝▜"
         witch_scale = 2
     elif model_ascii == 2:
         chart_ascii="▉  ▛▙▟▜"

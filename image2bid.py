@@ -38,8 +38,8 @@ if __name__ == '__main__':
     parser.add_argument('--path_file', action="store", dest='path_file', default='test.jpeg')
     parser.add_argument('--width_result', action="store", dest='width_result')
     parser.add_argument('--height_result', action="store", dest='height_result')
+    parser.add_argument('--display_ascii', action="store", type=bool, dest='display_ascii', default=False)
     parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
-    parser.add_argument('--display_ascii', action="store", dest='display_ascii', default=False)
     args = parser.parse_args()
     path_file = args.path_file
     width_result = int(args.width_result)
