@@ -1,7 +1,8 @@
 from PIL import Image
 import numpy as np
 import math
-
+from scipy.ndimage import center_of_mass
+from bid2ascii import decode_bidfile_ascii
 
 def classify_cell(cell_image, threshold=128):
     """Classifie une cellule en tant que carré blanc, carré noir ou triangle."""
@@ -19,33 +20,36 @@ def classify_cell(cell_image, threshold=128):
     else: # Sinon, on cherche des triangles
         
         # On utilise la même méthode que dans la réponse précédente mais avec un seuil adapté
-        black_pixels = np.where(pixels < threshold - 20)
+        black_pixels = pixels < threshold - 20
 
         # Si très peu de pixels noirs on considère un carré blanc
-        if len(black_pixels[0]) < h * w * 0.01:
+        if np.sum(black_pixels) < h * w * 0.01:
           return 0
 
         # Si beaucoup de pixels noirs on considère un carré noir
-        if len(black_pixels[0]) > h * w * 0.99:
+        if np.sum(black_pixels) > h * w * 0.99:
           return 1
 
-        # Calcule les positions min et max des pixels noirs pour déterminer l'orientation du triangle
-        min_x = min(black_pixels[1]) if len(black_pixels[1]) > 0 else 0
-        max_x = max(black_pixels[1]) if len(black_pixels[1]) > 0 else 0
-        min_y = min(black_pixels[0]) if len(black_pixels[0]) > 0 else 0
-        max_y = max(black_pixels[0]) if len(black_pixels[0]) > 0 else 0
+        # Calcule le centre de masse
+        center = center_of_mass(black_pixels)
+        
+        if np.isnan(center).any():
+            return -1 # Erreur
+        
+        center_x = center[1]
+        center_y = center[0]
+        
 
-        if min_x < w / 2 and min_y < h / 2:
+        if center_x < w / 2 and center_y < h / 2:
             return 5 # Triangle en haut à gauche
-        elif max_x > w / 2 and min_y < h / 2:
+        elif center_x > w / 2 and center_y < h / 2:
             return 4 # Triangle en haut à droite
-        elif min_x < w / 2 and max_y > h / 2:
+        elif center_x < w / 2 and center_y > h / 2:
            return 6 # Triangle en bas à gauche
-        elif max_x > w / 2 and max_y > h / 2:
+        elif center_x > w / 2 and center_y > h / 2:
             return 3 # Triangle en bas à droite
-
-        return -1 # Ne devrait pas arriver
-
+        
+        return 2
 
 def process_image(image_path, grid_width=40, grid_height=40):
     """Traite l'image, la divise en grille et la classifie."""
@@ -72,28 +76,20 @@ def process_image(image_path, grid_width=40, grid_height=40):
             
     return grid_codes
 
-
-def display_grid_codes(grid_codes):
-    """Affiche les codes de la grille avec des caractères symboliques."""
-    symbol_map = {
-        0: "■",  # Carré blanc
-        1: "□",  # Carré noir
-        3: "◣",  # Triangle en bas à droite
-        4: "◤",  # Triangle en haut à droite
-        5: "◥",  # Triangle en haut à gauche
-        6: "◢",  # Triangle en bas à gauche
-        -1: "X"  # Code d'erreur
-    }
-    for row in grid_codes:
-        row_str = " ".join(symbol_map.get(code, "?") for code in row)
-        print(row_str)
-
 if __name__ == "__main__":
-    image_path = "export/rubicon3_4000x2900.png"  # Remplacez par le chemin de votre image
-    grid_width = 40
-    grid_height = 29
+    image_path = "E:/Download/grill.jpeg"
+    bid_path=  'test.bid'
+    grid_width = 42
+    grid_height = 42
     grid_codes = process_image(image_path, grid_width, grid_height)
-    
     if grid_codes is not None:
-      print("Codes de la grille :")
-      display_grid_codes(grid_codes)
+        output_lines = []
+        for row in grid_codes:
+            row_str = ""
+            for code in row:
+                row_str += str(code)
+            output_lines.append(row_str)
+        with open(bid_path, 'w') as f:
+            for row in output_lines:
+               f.write(row + '\n')
+        decode_bidfile_ascii(bid_path)
