@@ -2,9 +2,10 @@ from PIL import Image, ImageDraw
 import numpy as np
 import math
 from scipy.ndimage import center_of_mass
-from bid2ascii import decode_bidfile_ascii
+from bid2ascii import decode_bidfile_ascii, decode_img_ascii
+import matplotlib.pyplot as plt  # Pour l'affichage des images
 
-def classify_cell(cell_image, threshold=128, triangle_ratio = 0.2):
+def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     """Classifie une cellule en tant que carré blanc, carré noir ou triangle."""
     pixels = np.array(cell_image)
     h, w = pixels.shape
@@ -22,38 +23,40 @@ def classify_cell(cell_image, threshold=128, triangle_ratio = 0.2):
     black_ratio = np.sum(black_pixels) / (h * w)
 
     if black_ratio > 1 - triangle_ratio:
-        return 1 # Carré noir
+        return 1  # Carré noir
 
     if black_ratio < triangle_ratio:
-        return 0 # Carré blanc
+        return 0  # Carré blanc
     
     # Calcule le centre de masse des pixels noirs
     center = center_of_mass(black_pixels)
     
     if np.isnan(center).any():
-        return 2 # Erreur
+        return 2  # Erreur
     
     center_x = center[1]
     center_y = center[0]
 
+    # Vérification de la position du centre de masse pour déterminer la direction du triangle
     if center_x < w / 2 and center_y < h / 2:
-        return 5 # Triangle en haut à gauche
+        return 5  # Triangle en haut à gauche
     elif center_x > w / 2 and center_y < h / 2:
-        return 4 # Triangle en haut à droite
+        return 4  # Triangle en haut à droite
     elif center_x < w / 2 and center_y > h / 2:
-        return 6 # Triangle en bas à gauche
+        return 6  # Triangle en bas à gauche
     elif center_x > w / 2 and center_y > h / 2:
-        return 3 # Triangle en bas à droite
+        return 3  # Triangle en bas à droite
     
-    return 2
+    return 2  # Par défaut, retourne une erreur
 
 def process_image(image_path, grid_width=40, grid_height=40, threshold=128, triangle_ratio=0.2):
     """Traite l'image, la divise en grille et la classifie."""
     try:
-      image = Image.open(image_path).convert('L')
+        image = Image.open(image_path).convert('L')
     except FileNotFoundError:
         print(f"Erreur : L'image à l'adresse {image_path} n'a pas été trouvée.")
         return None
+    
     width, height = image.size
     cell_width = math.floor(width / grid_width)
     cell_height = math.floor(height / grid_height)
@@ -72,12 +75,17 @@ def process_image(image_path, grid_width=40, grid_height=40, threshold=128, tria
             code = classify_cell(cell, threshold, triangle_ratio)
             grid_codes[row, col] = code
 
-            # display
+            # Affichage de la cellule et de son code
+            #decode_img_ascii(cell)
+            #plt.imshow(cell, cmap='gray')
+            #plt.title(f"Code: {code}\nPosition: ({row}, {col})")
+            #plt.axis('off')
+            #plt.show()
+
             if code == -1:
-              problematic_cells.append(((left, top, right, bottom), cell))
+                problematic_cells.append(((left, top, right, bottom), cell))
 
     return grid_codes, problematic_cells
-
 
 def visualize_problematic_cells(image_path, problematic_cells, output_path="problematic_cells.png"):
     """Visualise les cellules problématiques sur une nouvelle image."""
@@ -94,20 +102,19 @@ def visualize_problematic_cells(image_path, problematic_cells, output_path="prob
     draw = ImageDraw.Draw(image)
     for bbox, cell in problematic_cells:
         left, top, right, bottom = bbox
-        draw.rectangle(bbox, outline="red", width=3) # Red rectangle
+        draw.rectangle(bbox, outline="red", width=3)  # Red rectangle
         
     image.save(output_path)
     print(f"Image des cellules problématiques enregistrée dans '{output_path}'.")
 
-
 if __name__ == "__main__":
-    image_path = "source/balls.jpeg"
-    grid_width = 11
-    grid_height = 11
-    output_file = "balls.bid"
-    output_image = "test_problematic_cells.png"
+    image_path = "source/pavage.jpeg"  # Remplacez par le chemin de votre image
+    grid_width = 96
+    grid_height = 180
+    output_file = "pavage.bid"  # Nom du fichier de sortie
+    output_image = "test_problematic_cells.png"  # Nom du fichier de sortie pour les cellules problématiques
     threshold = 128
-    triangle_ratio = 0.3
+    triangle_ratio = 0.3  # Seuil qui permet de différencier les triangles des carrés
 
     grid_codes, problematic_cells = process_image(image_path, grid_width, grid_height, threshold, triangle_ratio)
 
@@ -123,5 +130,5 @@ if __name__ == "__main__":
             output_lines.append(row_str)
         with open(output_file, 'w') as f:
             for row in output_lines:
-               f.write(row + '\n')
+                f.write(row + '\n')
         decode_bidfile_ascii(output_file)
