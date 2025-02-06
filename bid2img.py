@@ -41,7 +41,7 @@ def draw_cellule(draw, x, y, cell_type, image_scale):
             draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=(0, 0, 0))
 
 
-def bid_2_img(path_bid, image_scale=10, bool_no_display_image=True):
+def bid_2_img(path_bid, image_scale=10, bool_no_save=True, bool_no_display_image=True):
     """Convertit un fichier BID en image."""
     with open(path_bid, 'r') as text_file:
         data = text_file.read().splitlines()
@@ -58,23 +58,25 @@ def bid_2_img(path_bid, image_scale=10, bool_no_display_image=True):
             cell = grid[y][x]
             draw_cellule(draw, x, y, cell, image_scale)
 
-    filename_img = os.path.splitext(os.path.basename(path_bid))[0]
-    filename_img += f'_{image_width}x{image_height}.png'
-    file_img = os.path.join('export', filename_img)
-    image.save(file_img)
-
-    if not bool_no_display_image:
-        bid_2_ascii(path_bid)
-        image.show()
+    if not bool_no_save:
+        filename_img = os.path.splitext(os.path.basename(path_bid))[0]
+        filename_img += f'_{int(image_width/image_scale)}x{int(image_height/image_scale)}.png'
+        file_img = os.path.join('export', filename_img)
+        image.save(file_img)
+        if not bool_no_display_image:
+            image.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
     parser.add_argument('--image_scale', action="store", dest='image_scale', default=10)
+    parser.add_argument('--no_save', action="store_true", dest='no_save')
     parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
     args = parser.parse_args()
     path_bid = args.path_bid
     image_scale = int(args.image_scale)
+    no_save = args.no_save
     no_display_image = args.no_display_image
-    bid_2_img(path_bid, image_scale, no_display_image)
+    bid_2_img(path_bid, image_scale, no_save, no_display_image)
+    bid_2_ascii(path_bid)

@@ -2,7 +2,7 @@ import argparse
 from PIL import Image
 
 
-def bid_2_ascii(file_model, model_ascii=1, output_file=None):
+def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
     charts_ascii=[{'motifs' : "▩   X ◤ ◣ ◢ ◥ ", 'width_cellule' : 2},
                   {'motifs' : "▉ X▛▙▟▜", 'width_cellule' : 1},
                   {'motifs' : "▉▉  XX▛▘▙▖▗▟▝▜", 'width_cellule' : 2},
@@ -11,7 +11,7 @@ def bid_2_ascii(file_model, model_ascii=1, output_file=None):
     motifs_ascii = chart_ascii['motifs']
     width_cellule = chart_ascii['width_cellule']
 
-    with open(file_model) as text_file:
+    with open(path_bid) as text_file:
         lines = text_file.readlines()
 
     output_lines = []
@@ -33,11 +33,11 @@ def bid_2_ascii(file_model, model_ascii=1, output_file=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
-    parser.add_argument('--path_file', action="store", dest='path_file')
+    parser.add_argument('--path_bid', action="store", dest='path_bid')
     parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
     parser.add_argument('--path_save', action="store", dest='path_save', default=None)
     args = parser.parse_args()
-    path_file = args.path_file
+    path_bid = args.path_bid
     path_save = args.path_save
     model_ascii = int(args.model_ascii)
-    bid_2_ascii(path_file, model_ascii, path_save)
+    bid_2_ascii(path_bid, model_ascii, path_save)
