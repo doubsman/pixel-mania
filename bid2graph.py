@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
-from bid2ascii import decode_bidfile_ascii
+from bid2ascii import bid_2_ascii
 
 
 def draw_cellule(ax, x, y, cell_type):
@@ -19,15 +19,13 @@ def draw_cellule(ax, x, y, cell_type):
         ax.fill([x, x, x+1], [y, y+1, y+1], color="black")
 
 
-def decode_bidfile_graph(file_model, model_ascii, display_ascii=True):
-    if display_ascii:
-        decode_bidfile_ascii(file_model, model_ascii)
-    with open(file_model, 'r') as text_file:
+def bid_2_graph(path_bid):
+    with open(path_bid, 'r') as text_file:
         data = text_file.read().splitlines()
     grid = np.array([[int(cell) for cell in row] for row in data])
 
     fig, ax = plt.subplots(figsize=(8, 8))
-    fig.canvas.manager.set_window_title(file_model)
+    fig.canvas.manager.set_window_title(path_bid)
 
     for y in range(grid.shape[0]):
         for x in range(grid.shape[1]):
@@ -47,9 +45,8 @@ def decode_bidfile_graph(file_model, model_ascii, display_ascii=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
-    parser.add_argument('--path_file', action="store", dest='path_file')
-    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
+    parser.add_argument('--path_bid', action="store", dest='path_bid')
     args = parser.parse_args()
-    path_file = args.path_file
-    model_ascii = int(args.model_ascii)
-    decode_bidfile_graph(path_file, model_ascii)
+    path_bid = args.path_bid
+    bid_2_graph(path_bid)
+    bid_2_ascii(path_bid)

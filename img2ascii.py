@@ -1,7 +1,6 @@
 import argparse
 from PIL import Image
 import math
-import numpy as np
 
 
 def img_2_ascii(image_path, grid_width=1, grid_height=1):

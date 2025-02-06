@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import argparse
-from bid2ascii import decode_bidfile_ascii
+from bid2ascii import bid_2_ascii
 
 
 def detect_pattern(cell):
@@ -41,17 +41,17 @@ def detect_pattern(cell):
     return '0'  # Par défaut
 
 
-def encode_bidfile(image_path, bid_path, grid_w, grid_h, model_ascii, display_ascii):
+def encode_bidfile(image_path, grid_width=1, grid_height=1, bid_path=None):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     img = cv2.equalizeHist(img)
     
     height, width = img.shape
-    cell_h = height // grid_h
-    cell_w = width // grid_w
+    cell_h = height // grid_height
+    cell_w = width // grid_width
     
     # Redimensionnement
-    new_height = cell_h * grid_h
-    new_width = cell_w * grid_w
+    new_height = cell_h * grid_height
+    new_width = cell_w * grid_width
     img = cv2.resize(img, (new_width, new_height))
     
     # Prétraitement
@@ -60,36 +60,36 @@ def encode_bidfile(image_path, bid_path, grid_w, grid_h, model_ascii, display_as
     
     # Détection des motifs
     pattern = []
-    for y in range(grid_h):
+    for y in range(grid_height):
         row = ''
-        for x in range(grid_w):
+        for x in range(grid_width):
             cell = img[y*cell_h:(y+1)*cell_h, x*cell_w:(x+1)*cell_w]
             pattern_code = detect_pattern(cell)
             row += pattern_code
         pattern.append(row)
     
-    with open(bid_path, 'w') as f:
-        for row in pattern:
-            f.write(row + '\n')
+    if bid_path is not None:
+        with open(bid_path, 'w') as f:
+            for row in pattern:
+                f.write(row + '\n')
+        bid_2_ascii(bid_path)
+    else:
+        print(pattern)
 
-    if display_ascii:
-        decode_bidfile_ascii(bid_path, model_ascii)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_img', action="store", dest='path_img', default='test.jpeg')
-    parser.add_argument('--path_bid', action="store", dest='path_bid', default='test.bid')
-    parser.add_argument('--width_result', action="store", dest='width_result')
-    parser.add_argument('--height_result', action="store", dest='height_result')
-    parser.add_argument('--display_ascii', action="store", type=bool, dest='display_ascii', default=True)
-    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
+    parser.add_argument('--path_bid', action="store", dest='path_bid', default=None)
+    parser.add_argument('--grid_width', action="store", dest='grid_width')
+    parser.add_argument('--grid_height', action="store", dest='grid_height')    
     args = parser.parse_args()
     path_img = args.path_img
     path_bid = args.path_bid
     width_result = int(args.width_result)
-    height_result = int(args.height_result)
-    model_ascii = int(args.model_ascii)
-    display_ascii = int(args.display_ascii)
-    encode_bidfile(path_img, path_bid, width_result, height_result, model_ascii, display_ascii)
+    grid_width = int(args.grid_width)
+    grid_height = int(args.grid_height)
+    encode_bidfile(path_img, grid_width, grid_height, path_bid)
+
 

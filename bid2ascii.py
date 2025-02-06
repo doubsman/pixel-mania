@@ -1,5 +1,4 @@
 import argparse
-from PIL import Image
 
 
 def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
@@ -32,7 +31,7 @@ def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='path image')
+    parser = argparse.ArgumentParser(description='bid to ascii consol')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
     parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
     parser.add_argument('--path_save', action="store", dest='path_save', default=None)
