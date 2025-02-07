@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import math
 from scipy.ndimage import center_of_mass
-from bid2ascii import decode_bidfile_ascii, decode_img_ascii
+from bid2ascii import bid_2_ascii
 import matplotlib.pyplot as plt  # Pour l'affichage des images
 
 def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
@@ -108,13 +108,13 @@ def visualize_problematic_cells(image_path, problematic_cells, output_path="prob
     print(f"Image des cellules problématiques enregistrée dans '{output_path}'.")
 
 if __name__ == "__main__":
-    image_path = "source/pavage.jpeg"  # Remplacez par le chemin de votre image
-    grid_width = 96
-    grid_height = 180
-    output_file = "pavage.bid"  # Nom du fichier de sortie
-    output_image = "test_problematic_cells.png"  # Nom du fichier de sortie pour les cellules problématiques
+    image_path = 'E:/Download/fence.jpeg'
+    grid_width = 72
+    grid_height = 128
+    output_file = 'E:/Download/fence.bid'
+    output_image = "E:/Download/fence_problematic_cells.png"
     threshold = 128
-    triangle_ratio = 0.3  # Seuil qui permet de différencier les triangles des carrés
+    triangle_ratio = 0.20  # Seuil qui permet de différencier les triangles des carrés
 
     grid_codes, problematic_cells = process_image(image_path, grid_width, grid_height, threshold, triangle_ratio)
 
@@ -131,4 +131,4 @@ if __name__ == "__main__":
         with open(output_file, 'w') as f:
             for row in output_lines:
                 f.write(row + '\n')
-        decode_bidfile_ascii(output_file)
+        bid_2_ascii(output_file)

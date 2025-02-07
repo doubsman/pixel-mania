@@ -25,7 +25,7 @@ def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
     print('└' + '─' * (len(lines[0])*width_cellule) + '┘')
 
     if output_file is not None:
-        with open(output_file, 'w',encoding='utf-8') as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             for row in output_lines:
                f.write(row + '\n')
 
@@ -34,9 +34,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='bid to ascii consol')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
     parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
-    parser.add_argument('--path_save', action="store", dest='path_save', default=None)
+    parser.add_argument('--path_ascii', action="store", dest='path_ascii', default=None)
     args = parser.parse_args()
     path_bid = args.path_bid
-    path_save = args.path_save
+    path_ascii = args.path_ascii
     model_ascii = int(args.model_ascii)
-    bid_2_ascii(path_bid, model_ascii, path_save)
+    bid_2_ascii(path_bid, model_ascii, path_ascii)
