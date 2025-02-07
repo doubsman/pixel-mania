@@ -41,7 +41,7 @@ def detect_pattern(cell):
     return '0'  # Par défaut
 
 
-def encode_bidfile(image_path, grid_width=1, grid_height=1, bid_path=None):
+def img_2_bid(image_path, grid_width=1, grid_height=1, bid_path=None):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     img = cv2.equalizeHist(img)
     
@@ -77,7 +77,6 @@ def encode_bidfile(image_path, grid_width=1, grid_height=1, bid_path=None):
         print(pattern)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_img', action="store", dest='path_img', default='test.jpeg')
@@ -87,9 +86,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     path_img = args.path_img
     path_bid = args.path_bid
-    width_result = int(args.width_result)
     grid_width = int(args.grid_width)
     grid_height = int(args.grid_height)
-    encode_bidfile(path_img, grid_width, grid_height, path_bid)
-
-
+    img_2_bid(path_img, grid_width, grid_height, path_bid)

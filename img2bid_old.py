@@ -1,6 +1,6 @@
 import cv2
 import argparse
-from bid2ascii import decode_bidfile_ascii
+from bid2ascii import bid_2_ascii
 
 def detect_pattern(cell):
     # Convertit la cellule en binaire (noir/blanc)
@@ -77,7 +77,7 @@ def encode_bidfile(image_path, bid_path, grid_w, grid_h, model_ascii, display_as
             f.write(row + '\n')
 
     if display_ascii:
-        decode_bidfile_ascii(bid_path, model_ascii)
+        bid_2_ascii(bid_path, model_ascii)
 
 
 
