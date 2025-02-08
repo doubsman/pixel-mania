@@ -41,7 +41,7 @@ def draw_cellule(draw, x, y, cell_type, image_scale):
             draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=(0, 0, 0))
 
 
-def bid_2_img(path_bid, image_scale=10, bool_no_save=True, bool_no_display_image=True):
+def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image=True):
     """Convertit un fichier BID en image."""
     with open(path_bid, 'r') as text_file:
         data = text_file.read().splitlines()

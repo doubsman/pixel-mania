@@ -20,6 +20,7 @@ ______________________________________________________________
 python .\img2bid.py --path_image source/fence.jpeg --grid_width 40 --grid_height 40 --no_display_image
 
 # Image 2 Ascii
+python .\img2ascii.py --path_image chevalier.png --grid_width 4 --grid_height 4
 python .\img2ascii.py --path_image export/fence.png --grid_width 40 --grid_height 40
 
 

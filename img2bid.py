@@ -1,9 +1,11 @@
-from PIL import Image, ImageDraw
+import argparse
+from PIL import Image
 import numpy as np
 import math
+import os
 from scipy.ndimage import center_of_mass
 from bid2ascii import bid_2_ascii
-import matplotlib.pyplot as plt  # Pour l'affichage des images
+
 
 def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     """Classifie une cellule en tant que carré blanc, carré noir ou triangle."""
@@ -49,20 +51,15 @@ def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     
     return 2  # Par défaut, retourne une erreur
 
-def process_image(image_path, grid_width=40, grid_height=40, threshold=128, triangle_ratio=0.2):
+
+def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool_no_display_image=True, triangle_ratio=0.2, threshold=128):
     """Traite l'image, la divise en grille et la classifie."""
-    try:
-        image = Image.open(image_path).convert('L')
-    except FileNotFoundError:
-        print(f"Erreur : L'image à l'adresse {image_path} n'a pas été trouvée.")
-        return None
+    image = Image.open(image_path).convert('L')
     
     width, height = image.size
     cell_width = math.floor(width / grid_width)
     cell_height = math.floor(height / grid_height)
-
     grid_codes = np.zeros((grid_height, grid_width), dtype=int)
-    problematic_cells = []
 
     for row in range(grid_height):
         for col in range(grid_width):
@@ -77,58 +74,37 @@ def process_image(image_path, grid_width=40, grid_height=40, threshold=128, tria
 
             # Affichage de la cellule et de son code
             #decode_img_ascii(cell)
-            #plt.imshow(cell, cmap='gray')
-            #plt.title(f"Code: {code}\nPosition: ({row}, {col})")
-            #plt.axis('off')
-            #plt.show()
 
-            if code == -1:
-                problematic_cells.append(((left, top, right, bottom), cell))
-
-    return grid_codes, problematic_cells
-
-def visualize_problematic_cells(image_path, problematic_cells, output_path="problematic_cells.png"):
-    """Visualise les cellules problématiques sur une nouvelle image."""
-    if not problematic_cells:
-        print("Aucune cellule problématique à visualiser.")
-        return
-
-    try:
-        image = Image.open(image_path).convert('RGB')
-    except FileNotFoundError:
-        print(f"Erreur : L'image à l'adresse {image_path} n'a pas été trouvée.")
-        return
-
-    draw = ImageDraw.Draw(image)
-    for bbox, cell in problematic_cells:
-        left, top, right, bottom = bbox
-        draw.rectangle(bbox, outline="red", width=3)  # Red rectangle
-        
-    image.save(output_path)
-    print(f"Image des cellules problématiques enregistrée dans '{output_path}'.")
-
-if __name__ == "__main__":
-    image_path = 'export/fence5_72x128.png'
-    grid_width = 72
-    grid_height = 128
-    output_file = 'bid/fence5.bid'
-    output_image = "E:/Download/fence_problematic_cells.png"
-    threshold = 128
-    triangle_ratio = 0.20  # Seuil qui permet de différencier les triangles des carrés
-
-    grid_codes, problematic_cells = process_image(image_path, grid_width, grid_height, threshold, triangle_ratio)
-
-    if grid_codes is not None:
-        if problematic_cells:
-            visualize_problematic_cells(image_path, problematic_cells, output_image)
-
+    if grid_codes is not None and not bool_no_save:
+        filename_bid = os.path.splitext(os.path.basename(image_path))[0] + '.bid'
+        path_bid = os.path.join('bid', filename_bid)
         output_lines = []
         for row in grid_codes:
             row_str = ""
             for code in row:
                 row_str += str(code)
             output_lines.append(row_str)
-        with open(output_file, 'w') as f:
+        with open(path_bid, 'w') as f:
             for row in output_lines:
                 f.write(row + '\n')
-        bid_2_ascii(output_file)
+        if not bool_no_display_image:
+            bid_2_ascii(path_bid)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Image to bid')
+    parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
+    parser.add_argument('--grid_width', action="store", dest='grid_width',default=1)
+    parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)
+    parser.add_argument('--no_save', action="store_true", dest='no_save')
+    parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
+    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', default=0.20)
+    args = parser.parse_args()
+    path_image = args.path_image
+    grid_width = int(args.grid_width)
+    grid_height = int(args.grid_height)
+    no_save = args.no_save
+    no_display_image = args.no_display_image
+    triangle_ratio = args.triangle_ratio
+    threshold = 128
+    img_2_bid(path_image, grid_width, grid_height, no_save, no_display_image, triangle_ratio, threshold)
