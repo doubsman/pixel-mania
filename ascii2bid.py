@@ -2,7 +2,7 @@ import argparse
 
 
 def ascii_2_bid(path_ascii, output_file=None):
-    charts_ascii=[{'motifs' : "▩   X ◤ ◣ ◢ ◥ ", 'width_cellule' : 2},
+    charts_ascii=[{'motifs' : "▩ X◤◣◢◥", 'width_cellule' : 2},
                   {'motifs' : "▉ X▛▙▟▜", 'width_cellule' : 1},
                   {'motifs' : "▉▉  XX▛▘▙▖▗▟▝▜", 'width_cellule' : 2},
                   {'motifs' : "▉   XX▛ ▙ ▟ ▜ ", 'width_cellule' : 2}]
@@ -19,14 +19,12 @@ def ascii_2_bid(path_ascii, output_file=None):
         ascii_art = ''
         for cell in range(2, len(line)-2, width_cellule):
             car = line[cell:cell + width_cellule]
-            if motifs_ascii.find(car) != -1:
-                if car == '  ':
-                    ascii_art += '1'
-                else:
-                    ascii_art += str(int(motifs_ascii.find(car)/2))
-        print(ascii_art)
-        if len(ascii_art.strip()) !=0:
-        	output_lines.append(ascii_art)
+            if car == ' '*width_cellule:
+                ascii_art += '1'
+            elif motifs_ascii.find(car.strip()) != -1:
+                ascii_art += str(motifs_ascii.find(car.strip()))
+        if ascii_art != '':
+            output_lines.append(ascii_art)
 
     if output_file is not None:
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -41,5 +39,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     path_ascii = args.path_ascii
     path_bid = args.path_bid
-    path_ascii='fence.ascii'
+    path_ascii = 'bid/fence4.ascii '
     ascii_2_bid(path_ascii, path_bid)

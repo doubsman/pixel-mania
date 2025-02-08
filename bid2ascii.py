@@ -1,7 +1,7 @@
 import argparse
+import os
 
-
-def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
+def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
     charts_ascii=[{'motifs' : "▩   X ◤ ◣ ◢ ◥ ", 'width_cellule' : 2},
                   {'motifs' : "▉ X▛▙▟▜", 'width_cellule' : 1},
                   {'motifs' : "▉▉  XX▛▘▙▖▗▟▝▜", 'width_cellule' : 2},
@@ -24,8 +24,10 @@ def bid_2_ascii(path_bid, model_ascii=1, output_file=None):
         output_lines.append(ascii_art)
     print('└' + '─' * (len(lines[0])*width_cellule) + '┘')
 
-    if output_file is not None:
-        with open(output_file, 'w', encoding='utf-8') as f:
+    if not bool_no_save:
+        filename_ascii = os.path.splitext(os.path.basename(path_bid))[0] + '.ascii'
+        path_ascii = os.path.join('bid', filename_ascii)
+        with open(path_ascii, 'w', encoding='utf-8') as f:
             for row in output_lines:
                f.write(row + '\n')
 
@@ -34,9 +36,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='bid to ascii consol')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
     parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
-    parser.add_argument('--path_ascii', action="store", dest='path_ascii', default=None)
+    parser.add_argument('--no_save', action="store_true", dest='no_save')
     args = parser.parse_args()
     path_bid = args.path_bid
-    path_ascii = args.path_ascii
+    no_save = args.no_save
     model_ascii = int(args.model_ascii)
-    bid_2_ascii(path_bid, model_ascii, path_ascii)
+    bid_2_ascii(path_bid, model_ascii, no_save)
