@@ -25,8 +25,8 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
     print('└' + '─' * (len(lines[0])*width_cellule) + '┘')
 
     if not bool_no_save:
-        filename_ascii = os.path.splitext(os.path.basename(path_bid))[0] + '.ascii'
-        path_ascii = os.path.join('bid', filename_ascii)
+        filename_ascii = os.path.splitext(os.path.basename(path_bid))[0] + '.txt'
+        path_ascii = os.path.join('ascii', filename_ascii)
         with open(path_ascii, 'w', encoding='utf-8') as f:
             for row in output_lines:
                f.write(row + '\n')

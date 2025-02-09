@@ -106,6 +106,6 @@ if __name__ == "__main__":
     grid_height = int(args.grid_height)
     no_save = args.no_save
     no_display_image = args.no_display_image
-    triangle_ratio = args.triangle_ratio
+    triangle_ratio = float(args.triangle_ratio)
     threshold = 128
     img_2_bid(path_image, grid_width, grid_height, no_save, no_display_image, triangle_ratio, threshold)

@@ -1,4 +1,4 @@
 *.png
 *.jpeg
 *.jpg
-*.pyc
+*/*.pyc
