@@ -1,7 +1,7 @@
 import argparse
 from PIL import Image, ImageDraw
 import os
-from bid2ascii import bid_2_ascii
+from img2ascii import img_2_ascii
 
 
 def draw_cellule(draw, x, y, cell_type, image_scale):
@@ -64,6 +64,7 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
         file_img = os.path.join('export', filename_img)
         image.save(file_img)
         if not bool_no_display_image:
+            img_2_ascii(file_img, scale=(1/image_scale)*3)
             image.show()
 
 
@@ -79,4 +80,3 @@ if __name__ == '__main__':
     no_save = args.no_save
     no_display_image = args.no_display_image
     bid_2_img(path_bid, image_scale, no_save, no_display_image)
-    bid_2_ascii(path_bid)

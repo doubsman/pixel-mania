@@ -2,9 +2,15 @@ import argparse
 from PIL import Image
 
 
-def img_2_ascii(image_path, grid_width=1, grid_height=1, width_cellule=2):
+def img_2_ascii(image_path, grid_width=1, grid_height=1, width_cellule=2, scale=1):
     image = Image.open(image_path)
     width, height = image.size
+    
+    if scale != 1:
+        width = int(width * scale)
+        height = int(height * scale)
+        image = image.resize((width, height), Image.Resampling.BICUBIC)
+    
     cell_width = int(width / grid_width)
     cell_height = int(height / grid_height)
     
@@ -44,9 +50,11 @@ if __name__ == '__main__':
     parser.add_argument('--grid_width', action="store", dest='grid_width',default=1)
     parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)
     parser.add_argument('--width_cellule', action="store", dest='width_cellule',default=1) 
+    parser.add_argument('--scale', action="store", dest='scale',default=1) 
     args = parser.parse_args()
     path_image = args.path_image
     grid_width = int(args.grid_width)
     grid_height = int(args.grid_height)
     width_cellule = int(args.width_cellule)
-    img_2_ascii(path_image, grid_width, grid_height, width_cellule)
+    scale = int(args.scale)
+    img_2_ascii(path_image, grid_width, grid_height, width_cellule, scale)
