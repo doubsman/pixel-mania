@@ -1,9 +1,3 @@
-# convert image to bid file
-python .\image2bid.py --path_file source/zigzag.png --width_result 57 --height_result 57 --display_ascii True
-
-
-
-
 ______________________________________________________________
 # Bid 2 Image
 python .\bid2img.py --path_bid bid/fence5.bid --no_display_image

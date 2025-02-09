@@ -2,7 +2,7 @@ import argparse
 from PIL import Image
 
 
-def img_2_ascii(image_path, grid_width=1, grid_height=1):
+def img_2_ascii(image_path, grid_width=1, grid_height=1, width_cellule=2):
     image = Image.open(image_path)
     width, height = image.size
     cell_width = int(width / grid_width)
@@ -16,7 +16,7 @@ def img_2_ascii(image_path, grid_width=1, grid_height=1):
             right = (col + 1) * cell_width
             bottom = (row + 1) * cell_height
             cell = image.crop((left, top, right, bottom))
-            decode_image_ascii(cell, out_lines, 2)
+            decode_image_ascii(cell, out_lines, width_cellule)
         print('\n'.join(out_lines))
 
 
@@ -42,9 +42,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Image to ASCII')
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
     parser.add_argument('--grid_width', action="store", dest='grid_width',default=1)
-    parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)    
+    parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)
+    parser.add_argument('--width_cellule', action="store", dest='width_cellule',default=1) 
     args = parser.parse_args()
     path_image = args.path_image
     grid_width = int(args.grid_width)
     grid_height = int(args.grid_height)
-    img_2_ascii(path_image, grid_width, grid_height)
+    width_cellule = int(args.width_cellule)
+    img_2_ascii(path_image, grid_width, grid_height, width_cellule)

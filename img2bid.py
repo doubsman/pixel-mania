@@ -5,6 +5,7 @@ import math
 import os
 from scipy.ndimage import center_of_mass
 from bid2ascii import bid_2_ascii
+from img2ascii import decode_image_ascii
 
 
 def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
@@ -34,7 +35,7 @@ def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     center = center_of_mass(black_pixels)
     
     if np.isnan(center).any():
-        return 2  # Erreur
+        return 2
     
     center_x = center[1]
     center_y = center[0]
@@ -49,7 +50,7 @@ def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     elif center_x > w / 2 and center_y > h / 2:
         return 3  # Triangle en bas à droite
     
-    return 2  # Par défaut, retourne une erreur
+    return 2
 
 
 def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool_no_display_image=True, triangle_ratio=0.2, threshold=128):
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)
     parser.add_argument('--no_save', action="store_true", dest='no_save')
     parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
-    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', default=0.20)
+    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', default=0.30)
     args = parser.parse_args()
     path_image = args.path_image
     grid_width = int(args.grid_width)
