@@ -35,10 +35,7 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='bid to ascii consol')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
-    parser.add_argument('--model_ascii', action="store", dest='model_ascii', default=1)
+    parser.add_argument('--model_ascii', action="store", dest='model_ascii', type=int, default=1)
     parser.add_argument('--no_save', action="store_true", dest='no_save')
     args = parser.parse_args()
-    path_bid = args.path_bid
-    no_save = args.no_save
-    model_ascii = int(args.model_ascii)
-    bid_2_ascii(path_bid, model_ascii, no_save)
+    bid_2_ascii(args.path_bid, args.model_ascii, args.no_save)

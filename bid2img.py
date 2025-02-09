@@ -71,12 +71,8 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='bid to image png')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
-    parser.add_argument('--image_scale', action="store", dest='image_scale', default=50)
+    parser.add_argument('--image_scale', action="store", dest='image_scale', type=int, default=50)
     parser.add_argument('--no_save', action="store_true", dest='no_save')
     parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
     args = parser.parse_args()
-    path_bid = args.path_bid
-    image_scale = int(args.image_scale)
-    no_save = args.no_save
-    no_display_image = args.no_display_image
-    bid_2_img(path_bid, image_scale, no_save, no_display_image)
+    bid_2_img(args.path_bid, args.image_scale, args.no_save, args.no_display_image)

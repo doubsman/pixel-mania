@@ -37,7 +37,4 @@ if __name__ == '__main__':
     parser.add_argument('--path_ascii', action="store", dest='path_ascii')
     parser.add_argument('--path_bid', action="store", dest='path_bid', default=None)
     args = parser.parse_args()
-    path_ascii = args.path_ascii
-    path_bid = args.path_bid
-    path_ascii = 'bid/fence4.ascii '
-    ascii_2_bid(path_ascii, path_bid)
+    ascii_2_bid(args.path_ascii, args.path_bid)

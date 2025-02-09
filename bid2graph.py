@@ -47,6 +47,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='path image')
     parser.add_argument('--path_bid', action="store", dest='path_bid')
     args = parser.parse_args()
-    path_bid = args.path_bid
-    bid_2_graph(path_bid)
-    bid_2_ascii(path_bid)
+    bid_2_graph(args.path_bid)
+    bid_2_ascii(args.path_bid)

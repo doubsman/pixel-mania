@@ -95,17 +95,11 @@ def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image to bid')
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
-    parser.add_argument('--grid_width', action="store", dest='grid_width',default=1)
-    parser.add_argument('--grid_height', action="store", dest='grid_height',default=1)
+    parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=1)
+    parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=1)
     parser.add_argument('--no_save', action="store_true", dest='no_save')
     parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
-    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', default=0.30)
+    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', type=float, default=0.30)
     args = parser.parse_args()
-    path_image = args.path_image
-    grid_width = int(args.grid_width)
-    grid_height = int(args.grid_height)
-    no_save = args.no_save
-    no_display_image = args.no_display_image
-    triangle_ratio = float(args.triangle_ratio)
     threshold = 128
-    img_2_bid(path_image, grid_width, grid_height, no_save, no_display_image, triangle_ratio, threshold)
+    img_2_bid(args.path_image, args.grid_width, args.grid_height, args.no_save, args.no_display_image, args.triangle_ratio, threshold)
