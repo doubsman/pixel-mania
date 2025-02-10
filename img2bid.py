@@ -5,6 +5,7 @@ import math
 import os
 from scipy.ndimage import center_of_mass
 from bid2ascii import bid_2_ascii
+from bid2img import bid_2_img
 from img2ascii import decode_image_ascii
 
 
@@ -53,7 +54,7 @@ def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     return 2
 
 
-def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool_no_display_image=True, triangle_ratio=0.2, threshold=128):
+def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool_no_save_ascii=True, triangle_ratio=0.2, threshold=128):
     """Traite l'image, la divise en grille et la classifie."""
     image = Image.open(image_path).convert('L')
     
@@ -76,20 +77,21 @@ def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool
             # Affichage de la cellule et de son code
             #decode_img_ascii(cell)
 
-    if grid_codes is not None and not bool_no_save:
-        filename_bid = os.path.splitext(os.path.basename(image_path))[0] + '.bid'
-        path_bid = os.path.join('bid', filename_bid)
-        output_lines = []
-        for row in grid_codes:
-            row_str = ""
-            for code in row:
-                row_str += str(code)
-            output_lines.append(row_str)
-        with open(path_bid, 'w') as f:
-            for row in output_lines:
-                f.write(row + '\n')
-        if not bool_no_display_image:
-            bid_2_ascii(path_bid)
+    if grid_codes is not None:
+        if not bool_no_save:
+            filename_bid = os.path.splitext(os.path.basename(image_path))[0] + '.bid'
+            path_bid = os.path.join('bid', filename_bid)
+            output_lines = []
+            for row in grid_codes:
+                row_str = ""
+                for code in row:
+                    row_str += str(code)
+                output_lines.append(row_str)
+            with open(path_bid, 'w') as f:
+                for row in output_lines:
+                    f.write(row + '\n')
+            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=bool_no_save, bool_no_display_image=False)
+            bid_2_ascii(path_bid=path_bid, model_ascii=1, bool_no_save=bool_no_save_ascii)
 
 
 if __name__ == "__main__":
@@ -97,9 +99,10 @@ if __name__ == "__main__":
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
     parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=1)
     parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=1)
-    parser.add_argument('--no_save', action="store_true", dest='no_save')
-    parser.add_argument('--no_display_image', action="store_true", dest='no_display_image')
+    parser.add_argument('--no_save_bid', action="store_true", dest='no_save_bid')
+    parser.add_argument('--no_save_ascii', action="store_true", dest='no_save_ascii')
     parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', type=float, default=0.30)
     args = parser.parse_args()
     threshold = 128
-    img_2_bid(args.path_image, args.grid_width, args.grid_height, args.no_save, args.no_display_image, args.triangle_ratio, threshold)
+    img_2_bid(args.path_image, args.grid_width, args.grid_height, args.no_save_bid, args.no_save_ascii, args.triangle_ratio, threshold)
+

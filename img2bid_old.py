@@ -1,7 +1,7 @@
 from PIL import Image, ImageEnhance
 import argparse
 import os
-from bid2ascii import decode_bidfile_ascii
+from bid2ascii import bid_2_ascii
 
 
 def encode_bidfile(file_model, width_result, height_result, model_ascii, display_ascii):
@@ -30,7 +30,7 @@ def encode_bidfile(file_model, width_result, height_result, model_ascii, display
             f.write("".join(map(str, row)) + "\n")
 
     if display_ascii:
-        decode_bidfile_ascii(file_bid, model_ascii)
+        bid_2_ascii(file_bid, model_ascii)
 
 
 if __name__ == '__main__':
