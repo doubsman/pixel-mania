@@ -54,16 +54,19 @@ def classify_cell(cell_image, threshold=128, triangle_ratio=0.2):
     return 2
 
 
-def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool_no_save_ascii=True, triangle_ratio=0.2, threshold=128):
+def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, threshold=128, display_cells=False, display_cells_scale_reduce=10, no_save_bid=True, no_save_ascii=True):
     """Traite l'image, la divise en grille et la classifie."""
-    image = Image.open(image_path).convert('L')
+    image = Image.open(path_image).convert('L')
     
     width, height = image.size
     cell_width = math.floor(width / grid_width)
     cell_height = math.floor(height / grid_height)
     grid_codes = np.zeros((grid_height, grid_width), dtype=int)
+    charts_ascii="▩⬚X◤◣◢◥"
 
+    scale_reduce = 10
     for row in range(grid_height):
+        out_lines=['']*(math.floor(cell_height/display_cells_scale_reduce) + 2)
         for col in range(grid_width):
             left = col * cell_width
             top = row * cell_height
@@ -74,12 +77,17 @@ def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool
             code = classify_cell(cell, threshold, triangle_ratio)
             grid_codes[row, col] = code
 
-            # Affichage de la cellule et de son code
-            #decode_img_ascii(cell)
+            if display_cells:
+                image_display = image.crop((left, top, right, bottom))
+                image_display = image_display.resize((math.floor(cell_width/display_cells_scale_reduce), math.floor(cell_height/display_cells_scale_reduce)), Image.Resampling.BICUBIC)
+                decode_image_ascii(image_display, out_lines)
+                out_lines[0] = out_lines[0].replace('┌───────────',f'┌ [{row:02d},{col:02d}] {charts_ascii[code]} ')
+        if display_cells:
+            print('\n'.join(out_lines))
 
     if grid_codes is not None:
-        if not bool_no_save:
-            filename_bid = os.path.splitext(os.path.basename(image_path))[0] + '.bid'
+        if not no_save_bid:
+            filename_bid = os.path.splitext(os.path.basename(path_image))[0] + '.bid'
             path_bid = os.path.join('bid', filename_bid)
             output_lines = []
             for row in grid_codes:
@@ -90,19 +98,28 @@ def img_2_bid(image_path, grid_width=40, grid_height=40, bool_no_save=True, bool
             with open(path_bid, 'w') as f:
                 for row in output_lines:
                     f.write(row + '\n')
-            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=bool_no_save, bool_no_display_image=False)
-            bid_2_ascii(path_bid=path_bid, model_ascii=1, bool_no_save=bool_no_save_ascii)
+            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=no_save_bid, bool_no_display_image=False)
+            bid_2_ascii(path_bid=path_bid, model_ascii=1, bool_no_save=no_save_ascii)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image to bid')
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
-    parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=1)
-    parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=1)
+    parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=10)
+    parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=10)
+    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', type=float, default=0.30)
+    parser.add_argument('--threshold', action="store", dest='threshold', type=int, default=128)
+    parser.add_argument('--display_cells', action="store_true", dest='display_cells')
+    parser.add_argument('--display_cells_scale_reduce', action="store", dest='display_cells_scale_reduce', type=int, default=10)
     parser.add_argument('--no_save_bid', action="store_true", dest='no_save_bid')
     parser.add_argument('--no_save_ascii', action="store_true", dest='no_save_ascii')
-    parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', type=float, default=0.30)
     args = parser.parse_args()
-    threshold = 128
-    img_2_bid(args.path_image, args.grid_width, args.grid_height, args.no_save_bid, args.no_save_ascii, args.triangle_ratio, threshold)
-
+    img_2_bid(path_image = args.path_image, 
+              grid_width = args.grid_width, 
+              grid_height = args.grid_height,
+              triangle_ratio = args.triangle_ratio, 
+              threshold = args.threshold,
+              display_cells = args.display_cells,
+              display_cells_scale_reduce = args.display_cells_scale_reduce,
+              no_save_bid = args.no_save_bid,
+              no_save_ascii = args.no_save_ascii)
