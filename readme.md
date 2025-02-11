@@ -1,23 +1,24 @@
 ______________________________________________________________
 # Bid 2 Image
-python .\bid2img.py --path_bid bid/fence5.bid --no_display_image
+.\bid2img.py --path_bid bid/fence5.bid --no_display_image
 
 # Bid 2 Ascii
-python .\bid2ascii.py --path_bid bid/fence5.bid
+.\bid2ascii.py --path_bid bid/fence5.bid
 
 # Bid 2 Graph
-python .\bid2graph.py --path_bid bid/fence5.bid
+.\bid2graph.py --path_bid bid/fence5.bid
 
 
 ______________________________________________________________
 # Image 2 Bid
-python .\img2bid.py --path_image source/fence.jpeg --grid_width 40 --grid_height 40 --no_display_image
+.\img2bid.py --path_image source/fence.jpeg --grid_width 40 --grid_height 40 --no_display_image
 
 # Image 2 Ascii
-python .\img2ascii.py --path_image chevalier.png --grid_width 4 --grid_height 4
-python .\img2ascii.py --path_image export/fence.png --grid_width 40 --grid_height 40
+.\img2ascii.py --path_image chevalier.png --grid_width 4 --grid_height 4
+.\img2ascii.py --path_image export/fence.png --grid_width 40 --grid_height 40
+.\img2ascii.py --path_image carre.png --grid_width 4 --grid_height 4 --scale 0.5
 
 
 ______________________________________________________________
 # Ascii 2 Bid
-python .\ascii2bid.py --path_ascii export/fence.ascii --path_bid export/fence5.bid
+.\ascii2bid.py --path_ascii export/fence.ascii --path_bid export/fence5.bid

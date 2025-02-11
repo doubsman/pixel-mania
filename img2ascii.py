@@ -49,7 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
     parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=1)
     parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=1)
-    parser.add_argument('--width_cellule', action="store", dest='width_cellule', type=int, default=1) 
+    parser.add_argument('--width_cellule', action="store", dest='width_cellule', type=int, default=2) 
     parser.add_argument('--scale', action="store", dest='scale', type=float, default=1) 
     args = parser.parse_args()
     img_2_ascii(args.path_image, args.grid_width, args.grid_height, args.width_cellule, args.scale)
