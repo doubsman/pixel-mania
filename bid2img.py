@@ -2,9 +2,20 @@ import argparse
 from PIL import Image, ImageDraw
 import os
 from img2ascii import img_2_ascii
+import numpy as np
 
 
-def draw_cellule(draw, x, y, cell_type, image_scale):
+GRAY_SCALE = {
+    0: (255, 255, 255),  # Blanc
+    1: (192, 192, 192),  # Gris très clair
+    2: (128, 128, 128),  # Gris clair
+    3: (64, 64, 64),     # Gris foncé
+    4: (32, 32, 32),     # Gris très foncé
+    5: (0, 0, 0)         # Noir
+}
+
+
+def draw_cellule(draw, x, y, cell_type, cell_color, image_scale):
     """Dessine une cellule en fonction de son type."""
     left = x * image_scale
     top = y * image_scale
@@ -13,54 +24,49 @@ def draw_cellule(draw, x, y, cell_type, image_scale):
 
     if image_scale == 1:
         # 1 cellule = 1 pixel
-        if cell_type == 0:  # carré blanc
-            draw.point((x, y), fill=(255, 255, 255))
-        elif cell_type == 1:  # carré noir
-            draw.point((x, y), fill=(0, 0, 0))
-        elif cell_type == 3:  # triangle en bas à droite
-            draw.point((x, y), fill=(0, 0, 0))
-        elif cell_type == 4:  # triangle en haut à droite
-            draw.point((x, y), fill=(0, 0, 0))
-        elif cell_type == 5:  # triangle en haut à gauche
-            draw.point((x, y), fill=(0, 0, 0))
-        elif cell_type == 6:  # triangle en bas à gauche
-            draw.point((x, y), fill=(0, 0, 0))
+        draw.point((x, y), fill=cell_color)
     else:
         # Cas général pour image_scale > 1
         if cell_type == 0:  # carré blanc
-            draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+            draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
         elif cell_type == 1:  # carré noir
-            draw.rectangle([(left, top), (right, bottom)], fill=(0, 0, 0), outline=(0, 0, 0))
+            draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(255, 255, 255))
         elif cell_type == 3:  # triangle en bas à droite
-            draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=(0, 0, 0))
+            draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=cell_color)
         elif cell_type == 4:  # triangle en haut à droite
-            draw.polygon([(left, top), (right, top), (right, bottom)], fill=(0, 0, 0))
+            draw.polygon([(left, top), (right, top), (right, bottom)], fill=cell_color)
         elif cell_type == 5:  # triangle en haut à gauche
-            draw.polygon([(left, top), (right, top), (left, bottom)], fill=(0, 0, 0))
+            draw.polygon([(left, top), (right, top), (left, bottom)], fill=cell_color)
         elif cell_type == 6:  # triangle en bas à gauche
-            draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=(0, 0, 0))
+            draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=cell_color)
 
 
 def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image=True):
     """Convertit un fichier BID en image."""
-    with open(path_bid, 'r') as text_file:
-        data = text_file.read().splitlines()
-    grid = [[int(cell) for cell in row] for row in data]
+    # shape
+    grid_bid = np.loadtxt(path_bid, dtype=str)
+    bid_width = len(str(grid_bid[0])) 
+    bid_height = grid_bid.size
 
-    image_width = len(data[0]) * image_scale
-    image_height = len(data) * image_scale
+    # colors
+    path_color = path_bid.replace('.bid','.color')
+    if os.path.isfile(path_color):
+        grid_colors = np.loadtxt(path_color, dtype=str)
+    else:
+        grid_colors = np.zeros((bid_height, bid_width), dtype=int)
 
-    image = Image.new('RGB', (image_width, image_height), color=(255, 255, 255))
+    # image
+    image = Image.new('RGB', (bid_width * image_scale, bid_height * image_scale), color=(255, 255, 255))
     draw = ImageDraw.Draw(image)
-
-    for y in range(len(grid)):
-        for x in range(len(grid[y])):
-            cell = grid[y][x]
-            draw_cellule(draw, x, y, cell, image_scale)
+    for row in range(bid_height):
+        for column in range(bid_width):
+            cell = int(grid_bid[row][column])
+            color = GRAY_SCALE[int(grid_colors[row][column])]
+            draw_cellule(draw, column, row, cell, color, image_scale)
 
     if not bool_no_save:
         filename_img = os.path.splitext(os.path.basename(path_bid))[0]
-        filename_img += f'_{int(image_width/image_scale)}x{int(image_height/image_scale)}.png'
+        filename_img += f'_{bid_width}x{bid_height}.png'
         file_img = os.path.join('export', filename_img)
         image.save(file_img)
         if not bool_no_display_image:
