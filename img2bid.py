@@ -8,14 +8,20 @@ from bid2ascii import bid_2_ascii
 from bid2img import bid_2_img
 from img2ascii import decode_image_ascii
 
-# Définir les nuances de gris en RGB
 GRAY_SCALE = {
     0: (255, 255, 255),  # Blanc
-    1: (224, 224, 224),  # Gris très clair
+    1: (220, 220, 220),  # Gris très clair
     2: (192, 192, 192),  # Gris clair
     3: (128, 128, 128),  # Gris foncé
-    4: (64, 64, 64),     # Gris très foncé
+    4: (92, 92, 92),     # Gris très foncé
     5: (0, 0, 0)         # Noir
+}
+
+CHARTS_ASCII = {
+    1: ['▩ ', '  ', 'X ', '◤ ', '◣ ', '◢ ', '◥ '],
+    2: ['▉',' ','X','▛','▙','▟','▜'],
+    3: ['▉▉','  ','XX','▛▘','▙▖','▗▟','▝▜'],
+    4: ['0 ','1 ','2 ','3 ','4 ','5 ','6 ']
 }
 
 def classify_shape(cell_image, threshold=128, triangle_ratio=0.2):
@@ -54,7 +60,7 @@ def classify_shape(cell_image, threshold=128, triangle_ratio=0.2):
     return 2  # Carré X
 
 
-def classify_color(image):
+def classify_color(image, tolerance=5):
     """Classifie la couleur d'une cellule en tant que blanc, gris très clair, gris clair, gris foncé, gris très foncé ou noir."""
     pixels = np.array(image)
     non_white_pixels = pixels[pixels < 255]
@@ -64,21 +70,21 @@ def classify_color(image):
     else:
         avg_color = 255  # Si tous les pixels sont blancs
 
-    if avg_color > 235:
+    if avg_color > 240 - tolerance:
         return 0  # Blanc
-    elif avg_color > 172:
+    elif avg_color > 185 - tolerance:
         return 1  # Gris très clair
-    elif avg_color > 108:
+    elif avg_color > 121 - tolerance:
         return 2  # Gris clair
-    elif avg_color > 44:
+    elif avg_color > 57 - tolerance:
         return 3  # Gris foncé
-    elif avg_color > 12:
+    elif avg_color > 16 - tolerance:
         return 4  # Gris très foncé
     else:
         return 5  # Noir
     
 
-def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, threshold=128, display_cells=False, display_cells_scale_reduce=10, no_save_bid=True, no_save_ascii=True):
+def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, threshold=128, display_cells=False, display_cells_scale_reduce=10, no_save_bid=True, model_ascii=1, no_save_ascii=True):
     """Traite l'image, la divise en grille et la classifie."""
     image = Image.open(path_image).convert('L')
     width, height = image.size
@@ -86,9 +92,13 @@ def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, thr
     cell_height = math.floor(height / grid_height)
     shape_codes = np.zeros((grid_height, grid_width), dtype=int)
     color_codes = np.zeros((grid_height, grid_width), dtype=int)
+    ascii_codes = np.zeros((grid_height, grid_width), dtype='<U2')
+    chart_ascii = CHARTS_ASCII[model_ascii]
 
     for row in range(grid_height):
-        out_lines = [''] * (math.floor(cell_height / display_cells_scale_reduce) + 2)
+        if display_cells:
+            cells_out_lines = [''] * (math.floor(cell_height / display_cells_scale_reduce) + 2)
+            
         for col in range(grid_width):
             left = col * cell_width
             top = row * cell_height
@@ -98,8 +108,12 @@ def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, thr
             cell = image.crop((left, top, right, bottom))
             color_code = classify_color(cell)
             shape_code = classify_shape(cell, threshold, triangle_ratio)
+            if shape_code == 0 and color_code == 5:
+                color_code = 0
             shape_codes[row, col] = shape_code
             color_codes[row, col] = color_code
+            ascii_codes[row, col] = chart_ascii[shape_code]
+
             if display_cells:
                 charts_ascii = "▩⬚X◤◣◢◥"
                 image_display = image.crop((left, top, right, bottom))
@@ -107,22 +121,30 @@ def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, thr
                     (math.floor(cell_width / display_cells_scale_reduce),
                      math.floor(cell_height / display_cells_scale_reduce)),
                     Image.Resampling.BICUBIC)
-                decode_image_ascii(image_display, out_lines)
-                out_lines[0] = out_lines[0].replace('┌─────────',
+                decode_image_ascii(image_display, cells_out_lines)
+                cells_out_lines[0] = cells_out_lines[0].replace('┌─────────',
                                                     f'┌ {row:02d},{col:02d} {charts_ascii[shape_code]} ')
         if display_cells:
-            print('\n'.join(out_lines))
+            print('\n'.join(cells_out_lines))
 
-    if shape_codes is not None and color_codes is not None:
-        if not no_save_bid:
-            filename_bid = os.path.splitext(os.path.basename(path_image))[0] + '.bid'
-            filename_col = os.path.splitext(os.path.basename(path_image))[0] + '.color'
-            path_bid = os.path.join('bid', filename_bid)
-            path_col = os.path.join('bid', filename_col)
-            np.savetxt(path_bid, shape_codes, fmt='%i', delimiter="")
-            np.savetxt(path_col, color_codes, fmt='%i', delimiter="")
-            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=no_save_bid, bool_no_display_image=False)
-            bid_2_ascii(path_bid=path_bid, model_ascii=1, bool_no_save=no_save_ascii)
+    if shape_codes is not None and not no_save_ascii:
+        filename_asc = os.path.splitext(os.path.basename(path_image))[0] + '.ascii'
+        path_asc = os.path.join('bid', filename_asc)
+        np.savetxt(path_asc, ascii_codes, fmt='%s', delimiter="", encoding='utf-8')
+
+    if shape_codes is not None and not no_save_bid:
+        filename_bid = os.path.splitext(os.path.basename(path_image))[0] + '.bid'
+        path_bid = os.path.join('bid', filename_bid)
+        np.savetxt(path_bid, shape_codes, fmt='%i', delimiter="")
+        
+        filename_col = os.path.splitext(os.path.basename(path_image))[0] + '.color'
+        path_col = os.path.join('bid', filename_col)
+        np.savetxt(path_col, color_codes, fmt='%i', delimiter="")
+
+        bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=no_save_bid, bool_no_display_image=False)
+        find_shape = np.where(shape_codes > 1)
+        model_ascii = 3 if find_shape[0].size == 0 else 1
+        bid_2_ascii(path_bid=path_bid, model_ascii=model_ascii)
 
 
 if __name__ == "__main__":
@@ -135,6 +157,7 @@ if __name__ == "__main__":
     parser.add_argument('--display_cells', action="store_true", dest='display_cells')
     parser.add_argument('--display_cells_scale_reduce', action="store", dest='display_cells_scale_reduce', type=int, default=10)
     parser.add_argument('--no_save_bid', action="store_true", dest='no_save_bid')
+    parser.add_argument('--model_ascii', action="store", dest='model_ascii', type=int, default=1)
     parser.add_argument('--no_save_ascii', action="store_true", dest='no_save_ascii')
     args = parser.parse_args()
     img_2_bid(path_image=args.path_image,
@@ -145,4 +168,5 @@ if __name__ == "__main__":
               display_cells=args.display_cells,
               display_cells_scale_reduce=args.display_cells_scale_reduce,
               no_save_bid=args.no_save_bid,
+              model_ascii=args.model_ascii,
               no_save_ascii=args.no_save_ascii)

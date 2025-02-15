@@ -30,7 +30,7 @@ def draw_cellule(draw, x, y, cell_type, cell_color, image_scale):
         if cell_type == 0:  # carré blanc
             draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
         elif cell_type == 1:  # carré noir
-            draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(255, 255, 255))
+            draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
         elif cell_type == 3:  # triangle en bas à droite
             draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=cell_color)
         elif cell_type == 4:  # triangle en haut à droite
@@ -61,7 +61,10 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
     for row in range(bid_height):
         for column in range(bid_width):
             cell = int(grid_bid[row][column])
-            color = GRAY_SCALE[int(grid_colors[row][column])]
+            color_indice = int(grid_colors[row][column])
+            if cell == 0 and color_indice == 5:
+                color_indice = 0
+            color = GRAY_SCALE[color_indice]
             draw_cellule(draw, column, row, cell, color, image_scale)
 
     if not bool_no_save:
