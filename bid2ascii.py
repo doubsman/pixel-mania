@@ -55,14 +55,12 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
             carac = int(grid_shapes[row][column])
             if bool_color:
                 color_indice = int(grid_colors[row][column])
-                color_rgb = GRAY_SCALE_DISPLAY[color_indice]
+                if color_indice == 5 and carac > 1:
+                   color_indice = 0
+                color_rgb = GRAY_SCALE_DISPLAY[color_indice]   
             else:
-                if carac == 0:
-                    color_rgb = (255, 255, 255)
-                else:
-                    color_rgb = (0, 0, 0)
+                color_rgb = (255, 255, 255) if carac != 1 else (0, 0, 0)
             color_ascii = f"\033[38;2;{color_rgb[0]};{color_rgb[1]};{color_rgb[2]}m"
-            
             carac_ascii = motifs_ascii[carac]
             backup_line += CHARTS_ASCII[1][carac]
             display_line += color_ascii + carac_ascii

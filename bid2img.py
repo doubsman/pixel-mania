@@ -45,8 +45,16 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
     """Convertit un fichier BID en image."""
     # shape
     grid_bid = np.loadtxt(path_bid, dtype=str)
-    bid_width = len(str(grid_bid[0])) 
-    bid_height = grid_bid.size
+    try:
+        bid_width = len(str(grid_bid[0])) 
+        bid_height = grid_bid.size
+    except:
+        # one line
+        bid_width = len(str(grid_bid))
+        bid_height = 1
+        tmp_shapes = np.zeros((bid_height), dtype=f'<U{bid_width}')
+        tmp_shapes[0] = grid_bid
+        grid_bid = tmp_shapes
 
     # colors
     path_color = path_bid.replace('.bid','.color')
@@ -64,15 +72,13 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
                 color_indice = int(grid_colors[row][column])
             else:
                 color_indice = 0 if cell == 0 else 5
-            if cell == 0 and color_indice == 5:
-                color_indice = 0
             color = GRAY_SCALE_DRAW[color_indice]
             draw_cellule(draw, column, row, cell, color, image_scale)
 
     if not bool_no_save:
         filename_img = os.path.splitext(os.path.basename(path_bid))[0]
         filename_img += f'_{bid_width}x{bid_height}.png'
-        file_img = os.path.join('export', filename_img)
+        file_img = os.path.join('bid', filename_img)
         image.save(file_img)
         if not bool_no_display_image:
             img_2_ascii(file_img, scale=(1/image_scale)*3)
