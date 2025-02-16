@@ -5,7 +5,7 @@ from img2ascii import img_2_ascii
 import numpy as np
 
 
-GRAY_SCALE = {
+GRAY_SCALE_DRAW = {
     0: (255, 255, 255),  # Blanc
     1: (192, 192, 192),  # Gris très clair
     2: (128, 128, 128),  # Gris clair
@@ -50,10 +50,9 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
 
     # colors
     path_color = path_bid.replace('.bid','.color')
-    if os.path.isfile(path_color):
+    bool_color = os.path.isfile(path_color)
+    if bool_color:
         grid_colors = np.loadtxt(path_color, dtype=str)
-    else:
-        grid_colors = np.zeros((bid_height, bid_width), dtype=int)
 
     # image
     image = Image.new('RGB', (bid_width * image_scale, bid_height * image_scale), color=(255, 255, 255))
@@ -61,10 +60,13 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
     for row in range(bid_height):
         for column in range(bid_width):
             cell = int(grid_bid[row][column])
-            color_indice = int(grid_colors[row][column])
+            if bool_color:
+                color_indice = int(grid_colors[row][column])
+            else:
+                color_indice = 0 if cell == 0 else 5
             if cell == 0 and color_indice == 5:
                 color_indice = 0
-            color = GRAY_SCALE[color_indice]
+            color = GRAY_SCALE_DRAW[color_indice]
             draw_cellule(draw, column, row, cell, color, image_scale)
 
     if not bool_no_save:

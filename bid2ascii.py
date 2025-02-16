@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-GRAY_SCALE = {
+GRAY_SCALE_DISPLAY = {
     0: (255, 255, 255),  # Blanc
     1: (220, 220, 220),  # Gris très clair
     2: (192, 192, 192),  # Gris clair
@@ -41,10 +41,10 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
 
     # colors
     path_color = path_bid.replace('.bid','.color')
-    if os.path.isfile(path_color):
+    bool_color = os.path.isfile(path_color)
+    if bool_color:
         grid_colors = np.loadtxt(path_color, dtype=str)
-    else:
-        grid_colors = np.zeros((height, width), dtype=int)
+
     
     output_lines = []
     print('┌' + '─' * (2 + width*width_cellule) + '┐')
@@ -52,10 +52,17 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
         backup_line = ''
         display_line = ''
         for column in range(width):
-            color_indice = int(grid_colors[row][column])
-            color_rgb = GRAY_SCALE[color_indice]
-            color_ascii = f"\033[38;2;{color_rgb[0]};{color_rgb[1]};{color_rgb[2]}m"
             carac = int(grid_shapes[row][column])
+            if bool_color:
+                color_indice = int(grid_colors[row][column])
+                color_rgb = GRAY_SCALE_DISPLAY[color_indice]
+            else:
+                if carac == 0:
+                    color_rgb = (255, 255, 255)
+                else:
+                    color_rgb = (0, 0, 0)
+            color_ascii = f"\033[38;2;{color_rgb[0]};{color_rgb[1]};{color_rgb[2]}m"
+            
             carac_ascii = motifs_ascii[carac]
             backup_line += CHARTS_ASCII[1][carac]
             display_line += color_ascii + carac_ascii
