@@ -9,7 +9,7 @@ def img_2_ascii(image_path, grid_width=1, grid_height=1, width_cellule=2, scale=
     if scale != 1:
         width = int(width * scale)
         height = int(height * scale)
-        image = image.resize((width, height), Image.Resampling.BICUBIC)
+        image = image.resize((width, height), Image.Resampling.LANCZOS)
     
     cell_width = int(width / grid_width)
     cell_height = int(height / grid_height)

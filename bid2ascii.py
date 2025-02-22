@@ -72,7 +72,7 @@ def bid_2_ascii(path_bid, model_ascii=1, bool_no_save=True):
 
     if not bool_no_save:
         filename_ascii = os.path.splitext(os.path.basename(path_bid))[0] + '.ascii'
-        path_ascii = os.path.join('bid', filename_ascii)
+        path_ascii = os.path.join('wrk', filename_ascii)
         np.savetxt(path_ascii, grid_ascii, fmt='%s', encoding='utf-8')
 
 

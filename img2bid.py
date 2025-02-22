@@ -8,6 +8,7 @@ from bid2ascii import bid_2_ascii
 from bid2img import bid_2_img
 from img2ascii import decode_image_ascii
 
+
 GRAY_SCALE = {
     0: (255, 255, 255),  # Blanc
     1: (220, 220, 220),  # Gris très clair
@@ -23,6 +24,7 @@ CHARTS_ASCII = {
     3: ['▉▉','  ','XX','▛▘','▙▖','▗▟','▝▜'],
     4: ['0 ','1 ','2 ','3 ','4 ','5 ','6 ']
 }
+
 
 def classify_shape(cell_image, threshold=128, triangle_ratio=0.2):
     """Classifie une cellule en tant que carré ou triangle."""
@@ -129,16 +131,16 @@ def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, thr
 
     if shape_codes is not None and not no_save_ascii:
         filename_asc = os.path.splitext(os.path.basename(path_image))[0] + '.ascii'
-        path_asc = os.path.join('bid', filename_asc)
+        path_asc = os.path.join('wrk', filename_asc)
         np.savetxt(path_asc, ascii_codes, fmt='%s', delimiter="", encoding='utf-8')
 
     if shape_codes is not None and not no_save_bid:
         filename_bid = os.path.splitext(os.path.basename(path_image))[0] + '.bid'
-        path_bid = os.path.join('bid', filename_bid)
+        path_bid = os.path.join('wrk', filename_bid)
         np.savetxt(path_bid, shape_codes, fmt='%i', delimiter="")
         
         filename_col = os.path.splitext(os.path.basename(path_image))[0] + '.color'
-        path_col = os.path.join('bid', filename_col)
+        path_col = os.path.join('wrk', filename_col)
         np.savetxt(path_col, color_codes, fmt='%i', delimiter="")
 
         bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=no_save_bid, bool_no_display_image=False)

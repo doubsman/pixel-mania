@@ -26,10 +26,8 @@ def draw_cellule(draw, x, y, cell_type, cell_color, image_scale):
         # 1 cellule = 1 pixel
         draw.point((x, y), fill=cell_color)
     else:
-        # Cas général pour image_scale > 1
-        if cell_type == 0:  # carré blanc
-            draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
-        elif cell_type == 1:  # carré noir
+        draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+        if cell_type == 1:  # carré noir
             draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
         elif cell_type == 3:  # triangle en bas à droite
             draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=cell_color)
@@ -78,7 +76,7 @@ def bid_2_img(path_bid, image_scale=50, bool_no_save=True, bool_no_display_image
     if not bool_no_save:
         filename_img = os.path.splitext(os.path.basename(path_bid))[0]
         filename_img += f'_{bid_width}x{bid_height}.png'
-        file_img = os.path.join('bid', filename_img)
+        file_img = os.path.join('wrk', filename_img)
         image.save(file_img)
         if not bool_no_display_image:
             img_2_ascii(file_img, scale=(1/image_scale)*3)
