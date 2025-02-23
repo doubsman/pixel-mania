@@ -283,7 +283,7 @@ def save_image():
 
 root = ttk.Window(themename="cosmo")
 root.title("Image Editor")
-root.geometry("510x580+300+110")
+root.geometry("1024x580+300+110")
 root.resizable(0, 0)
 icon = ttk.PhotoImage(file='png/carre.png')
 root.iconphoto(False, icon)
