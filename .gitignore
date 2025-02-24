@@ -2,3 +2,4 @@
 *.jpeg
 *.jpg
 */*.pyc
+*/tst/*

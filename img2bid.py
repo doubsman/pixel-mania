@@ -152,8 +152,8 @@ def img_2_bid(path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, thr
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image to bid')
     parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
-    parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=10)
-    parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=10)
+    parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=48)
+    parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=48)
     parser.add_argument('--triangle_ratio', action="store", dest='triangle_ratio', type=float, default=0.30)
     parser.add_argument('--threshold', action="store", dest='threshold', type=int, default=128)
     parser.add_argument('--display_cells', action="store_true", dest='display_cells')

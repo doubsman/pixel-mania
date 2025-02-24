@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter.messagebox import showerror, askyesno
 from tkinter import colorchooser
 from PIL import Image, ImageOps, ImageTk, ImageFilter, ImageGrab
-
+from bid_class import BidFile
 
 # defining global variables
 WIDTH = 1024
@@ -17,16 +17,12 @@ pen_color = "black"
 # function to open the image file
 def open_image():
     global file_path
-    file_path = filedialog.askopenfilename(title="Open Image File", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")])
+    file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
     if file_path:
-        global image, photo_image
-        image = Image.open(file_path)
-        new_width = int((WIDTH / 2))
-        image = image.resize((new_width, HEIGHT), Image.LANCZOS)
-            
-        image = ImageTk.PhotoImage(image)
+        Mybidclass = BidFile()
+        imagebid = Mybidclass.load_bidfile(file_path, WIDTH)
+        image = ImageTk.PhotoImage(imagebid)
         canvas.create_image(0, 0, anchor="nw", image=image)
-        
 
 # a global variable for checking the flip state of the image
 is_flipped = False
@@ -204,6 +200,7 @@ def draw(event):
         canvas.create_oval(x1, y1, x2, y2, fill=pen_color, outline="", width=pen_size, tags="oval")
 
 
+
 # function for changing the pen color
 def change_color():
     global pen_color
@@ -283,7 +280,8 @@ def save_image():
 
 root = ttk.Window(themename="cosmo")
 root.title("Image Editor")
-root.geometry("1024x580+300+110")
+#root.geometry("1024x580+300+110")
+root.geometry("1500x1500")
 root.resizable(0, 0)
 icon = ttk.PhotoImage(file='png/carre.png')
 root.iconphoto(False, icon)
