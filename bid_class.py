@@ -21,9 +21,9 @@ class BidFile:
         self.bool_color = False
         self.grid_width = 0
         self.grid_height = 0
-        self.image_scale = 0
-        self.result_width= 1024
-        self.result_height=0
+        self.image_scale = 1
+        self.result_width = 1024
+        self.result_height = 0
         self.image = None
         self.draw = None
 
@@ -31,23 +31,17 @@ class BidFile:
         if result_width is not None:
             self.result_width = result_width
         self.path_bid = path_bid
-        self.grid_bid = np.loadtxt(self.path_bid, dtype=str)
-        try:
-            self.grid_width = len(str(self.grid_bid[0])) 
-            self.grid_height = self.grid_bid.size
-        except:
-            # one line
-            self.grid_width = len(str(self.grid_bid))
-            self.grid_height = 1
-            tmp_shapes = np.zeros((self.grid_height), dtype=f'<U{self.grid_width}')
-            tmp_shapes[0] = self.grid_bid
-            self.grid_bid = tmp_shapes
+        self.grid_bid = np.genfromtxt(self.path_bid, delimiter=1, dtype=int, ndmin=2)
+        self.grid_width = len(self.grid_bid[0])
+        self.grid_height = int(self.grid_bid.size / self.grid_width)
 
         # colors
         self.path_color = self.path_bid.replace('.bid','.color')
         self.bool_color = os.path.isfile(self.path_color)
         if self.bool_color:
-            self.grid_colors = np.loadtxt(self.path_color, dtype=str)
+            self.grid_colors = np.genfromtxt(self.path_color, delimiter=1, dtype=int, ndmin=2)
+        else:
+            self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
         
         # draw bid
         self.draw_bidfile()
@@ -59,13 +53,17 @@ class BidFile:
         self.draw = ImageDraw.Draw(self.image)
         for row in range(self.grid_height):
             for column in range(self.grid_width):
-                cell = int(self.grid_bid[row][column])
+                cell = self.grid_bid[row][column]
                 if self.bool_color:
-                    color_indice = int(self.grid_colors[row][column])
+                    color_indice = self.grid_colors[row][column]
+                    # plain square if color
+                    if cell == 0 and color_indice > 0:
+                        cell = 1
                 else:
+                    # not greys
                     color_indice = 0 if cell == 0 else 5
-                color = GRAY_SCALE_DRAW[color_indice]
-                self.draw_cellule(column, row, cell, color)
+
+                self.draw_cellule(column, row, cell, color_indice)
 
     def draw_cellule(self, x, y, cell_type, cell_color):
         """Dessine une cellule en fonction de son type."""
@@ -73,22 +71,23 @@ class BidFile:
         top = y * self.image_scale
         right = (x + 1) * self.image_scale
         bottom = (y + 1) * self.image_scale
+        color = GRAY_SCALE_DRAW[cell_color]
 
         if self.image_scale == 1:
             # 1 cellule = 1 pixel
-            self.draw.point((x, y), fill=cell_color)
+            self.draw.point((x, y), fill=color)
         else:
             self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
             if cell_type == 1:  # carré noir
-                self.draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
+                self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
             elif cell_type == 3:  # triangle en bas à droite
-                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=cell_color)
+                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
             elif cell_type == 4:  # triangle en haut à droite
-                self.draw.polygon([(left, top), (right, top), (right, bottom)], fill=cell_color)
+                self.draw.polygon([(left, top), (right, top), (right, bottom)], fill=color)
             elif cell_type == 5:  # triangle en haut à gauche
-                self.draw.polygon([(left, top), (right, top), (left, bottom)], fill=cell_color)
+                self.draw.polygon([(left, top), (right, top), (left, bottom)], fill=color)
             elif cell_type == 6:  # triangle en bas à gauche
-                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=cell_color)
+                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
     def display_bidfile(self):
         if self.grid_bid is not None:
@@ -97,6 +96,6 @@ class BidFile:
 
 
 if __name__ == '__main__':
-	Myclass = BidFile()
-	Myclass.load_bidfile('e:/download/africa.bid')
-	Myclass.display_bidfile()
+    Myclass = BidFile()
+    Myclass.load_bidfile('bid/balls.bid')
+    Myclass.display_bidfile()
