@@ -47,6 +47,15 @@ class BidFile:
         self.draw_bidfile()
         return self.image
 
+    def new_bid(self, result_width=None):
+        if result_width is not None:
+            self.result_width = result_width
+        self.grid_height = self.grid_width = 48
+        self.grid_bid = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.draw_bidfile()
+        return self.image
+
     def draw_bidfile(self):
         self.image_scale = int(self.result_width / float(self.grid_width))
         self.image = Image.new('RGB', (self.grid_width * self.image_scale, self.grid_height * self.image_scale), color=(255, 255, 255))
@@ -77,7 +86,7 @@ class BidFile:
             # 1 cellule = 1 pixel
             self.draw.point((x, y), fill=color)
         else:
-            self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+            self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))#, outline=(0, 0, 0))
             if cell_type == 1:  # carré noir
                 self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
             elif cell_type == 3:  # triangle en bas à droite
@@ -89,13 +98,16 @@ class BidFile:
             elif cell_type == 6:  # triangle en bas à gauche
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
-    def display_bidfile(self):
-        if self.grid_bid is not None:
-            self.image.show()
-
-
+    def save_bidfiles(self, path_bid):
+        if not path_bid.endswith(".bid"):
+            self.path_bid = path_bid + '.bid'
+        else:
+            self.path_bid = path_bid
+        np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
+        path_color = self.path_bid.replace('.bid','.color')
+        np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
 
 if __name__ == '__main__':
     Myclass = BidFile()
-    Myclass.load_bidfile('bid/balls.bid')
-    Myclass.display_bidfile()
+    image = Myclass.load_bidfile('bid/balls.bid')
+    image.show()

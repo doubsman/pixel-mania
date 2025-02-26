@@ -10,12 +10,13 @@ class ImageEditorApp(BidFile):
     def __init__(self, root):
         BidFile.__init__(self)
         self.root = root
-        self.root.title("Image Editor")
-        self.root.geometry("1024x1024")
+        self.tittle = "Image Bid Editor"
+        self.root.title(self.tittle)
+        self.root.geometry("1600x1550")
         self.root.resizable(width=False, height=False)
 
-        self.WIDTH = 1024-200
-        self.HEIGHT = 1024-30
+        self.WIDTH = 1600-100
+        self.HEIGHT = 1550-30
         self.file_path = ""
         self.pen_size = 3
         self.pen_color = "black"
@@ -23,6 +24,7 @@ class ImageEditorApp(BidFile):
 
         self.grid_bid_backup = None
         self.grid_sel_cells = None
+        self.grid_clipboard = None
 
         self.grid_x = 0
         self.grid_y = 0
@@ -43,22 +45,37 @@ class ImageEditorApp(BidFile):
         left_frame.pack(side="left", fill="y")
 
         image_icon = ttk.PhotoImage(file='ico/open.png').subsample(12,12)
-        image_button = ttk.Button(left_frame, image=image_icon, bootstyle="light", command=self.open_image)
+        image_button = ttk.Button(left_frame, image=image_icon, bootstyle="outline", command=self.open_image)
         image_button.image = image_icon
         image_button.pack(pady=5)
 
+        new_icon = ttk.PhotoImage(file='ico/new.png').subsample(12,12)
+        new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.new_image)
+        new_button.image = new_icon
+        new_button.pack(pady=5)
+
         color_icon = ttk.PhotoImage(file='ico/draw.png').subsample(12,12)
-        color_button = ttk.Button(left_frame, image=color_icon, bootstyle="light", command=self.mode_draw)
+        color_button = ttk.Button(left_frame, image=color_icon, bootstyle="outline", command=self.mode_draw)
         color_button.image = color_icon
         color_button.pack(pady=5)
 
         select_icon = ttk.PhotoImage(file='ico/select.png').subsample(12,12)
-        select_button = ttk.Button(left_frame, image=select_icon, bootstyle="light", command=self.mode_select)
+        select_button = ttk.Button(left_frame, image=select_icon, bootstyle="outline", command=self.mode_select)
         select_button.image = select_icon
         select_button.pack(pady=5)
 
+        copy_icon = ttk.PhotoImage(file='ico/copy.png').subsample(12,12)
+        copy_button = ttk.Button(left_frame, image=copy_icon, bootstyle="outline", text="Copier", command=self.copy_cells)
+        copy_button.image = copy_icon
+        copy_button.pack(pady=5)
+
+        paste_icon = ttk.PhotoImage(file='ico/paste.png').subsample(12,12)
+        paste_button = ttk.Button(left_frame, image=paste_icon, bootstyle="outline", text="Coller", command=lambda: self.paste_cells(self.paste_event))
+        paste_button.image = paste_icon
+        paste_button.pack(pady=5)
+
         grid_icon = ttk.PhotoImage(file='ico/grid.png').subsample(12,12)
-        grid_button = ttk.Button(left_frame, image=grid_icon, bootstyle="light", command=self.draw_grid)
+        grid_button = ttk.Button(left_frame, image=grid_icon, bootstyle="outline", command=self.draw_grid)
         grid_button.image = grid_icon
         grid_button.pack(pady=5)
 
@@ -71,30 +88,50 @@ class ImageEditorApp(BidFile):
         self.palet.create_rectangle(0, 0, 50, 50, fill="", outline="red", width=2, tags="cell_color")
 
         save_icon = ttk.PhotoImage(file='ico/save.png').subsample(12,12)
-        save_button = ttk.Button(left_frame, image=save_icon, bootstyle="light", command=self.save_image)
+        save_button = ttk.Button(left_frame, image=save_icon, bootstyle="outline", command=self.save_image)
         save_button.image = save_icon
         save_button.pack(pady=5)
 
         # The right canvas for displaying the image
-        self.canvas = ttk.Canvas(self.root, width=self.WIDTH, height=self.HEIGHT)
+        self.canvas = ttk.Canvas(self.root, width=self.WIDTH, height=self.HEIGHT, border=2)
         self.canvas.pack()
         self.canvas.bind("<Motion>", self.update_coords)
 
         self.coord_label = ttk.Label(self.root, text="Coords: (0, 0)")
         self.coord_label.pack(side="bottom")
 
+        # create new bid
+        self.new_image()
+
     def open_image(self):
         self.file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
-        if self.file_path:
+        if self.file_path != '':
             imagebid = self.load_bidfile(self.file_path, self.WIDTH)
-            image = ImageTk.PhotoImage(imagebid)
-            self.canvas.create_image(0, 0, anchor="nw", image=image)
-            self.canvas.image = image
-            self.grid_bid_backup = self.grid_bid
-            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+            self.display_image(imagebid)
+            self.root.title(f'{self.tittle} [{self.file_path}]')
+
+    def new_image(self):
+        imagebid = self.new_bid(self.WIDTH)
+        self.display_image(imagebid)
+        self.root.title(f'{self.tittle} : [NEW]')
+
+    def display_image(self, imagebid):
+        image = ImageTk.PhotoImage(imagebid)
+        self.canvas.create_image(0, 0, anchor="nw", image=image)
+        self.canvas.image = image
+        self.grid_bid_backup = self.grid_bid
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.bool_grid = False
+        self.draw_grid()
+        self.mode_draw()
 
     def save_image(self):
-        pass
+        if self.file_path == '':
+            self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
+        if self.file_path != '':
+                self.save_bidfiles(self.file_path)
+                self.file_path = self.path_bid
+                self.root.title(f'{self.tittle} [{self.file_path}]')
 
     def select_color(self, event):
         grid_y = int(event.y / 50)
@@ -111,13 +148,12 @@ class ImageEditorApp(BidFile):
         elif grid_y > 5:
             self.current_select_shape = grid_y - 3
             self.current_select_color = 5
-        print(self.current_select_shape,self.current_select_color)
 
     def update_coords(self, event):
-        self.coord_label
+        self.paste_event = event
         self.grid_x = int(event.x / self.image_scale) 
         self.grid_y = int(event.y / self.image_scale)
-        self.coord_label.config(text=f"Coords: ({self.grid_x+1}, {self.grid_y+1})")
+        self.coord_label.config(text=f"Coords: ({self.grid_x+1:02d}, {self.grid_y+1:02d})")
 
     def mode_draw(self):
         self.canvas.bind("<Button-1>", self.draw_cellules)
@@ -162,6 +198,35 @@ class ImageEditorApp(BidFile):
 
     def change_color(self):
         self.pen_color = colorchooser.askcolor(title="Select Pen Color")[1]
+
+    def copy_cells(self):
+        selected_cells = []
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                if self.grid_sel_cells[y, x] == 1:
+                    selected_cells.append((x, y, self.grid_bid[y][x], self.grid_colors[y][x]))
+        self.grid_clipboard = selected_cells
+
+    def paste_cells(self, event):
+        if hasattr(self, 'self.grid_clipboard'):
+            clipboard_cells = self.grid_clipboard
+            # Déterminer la position à coller les cellules
+            grid_x = int(event.x / self.image_scale)
+            grid_y = int(event.y / self.image_scale)
+            
+            # Coller les cellules
+            for cell in clipboard_cells:
+                x, y, shape, color = cell
+                new_x = grid_x + x - min([cell[0] for cell in clipboard_cells])
+                new_y = grid_y + y - min([cell[1] for cell in clipboard_cells])
+                if 0 <= new_x < self.grid_width and 0 <= new_y < self.grid_height:
+                    self.grid_bid[new_y][new_x] = shape
+                    self.grid_colors[new_y][new_x] = color
+                    self.draw_cellule(new_x, new_y, shape, color)
+            
+            image = ImageTk.PhotoImage(self.image)
+            self.canvas.create_image(0, 0, anchor="nw", image=image)
+            self.canvas.image = image
 
 
 if __name__ == "__main__":
