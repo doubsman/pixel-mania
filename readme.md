@@ -27,4 +27,4 @@ ______________________________________________________________
 
 ______________________________________________________________
 # create EXE Windows from editor
-pyinstaller --noconfirm --onefile --windowed --add-data "./ico/*;." ./editor.py
+pyinstaller --noconfirm --onefile --windowed --add-data ".\ico\*;ico" ./editor.py

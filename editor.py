@@ -52,7 +52,7 @@ class ImageEditorApp(BidFile):
         image_button.image = image_icon
         image_button.pack(pady=5)
 
-        new_icon = ttk.PhotoImage(file='ico/new.png').subsample(12,12)
+        new_icon = ttk.PhotoImage(file='ico/plus.png').subsample(12,12)
         new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.create_bid)
         new_button.image = new_icon
         new_button.pack(pady=5)
@@ -65,7 +65,12 @@ class ImageEditorApp(BidFile):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 0, 50, 50, fill="", outline="red", width=2, tags="cell_color")
 
-        select_icon = ttk.PhotoImage(file='ico/select.png').subsample(12,12)
+        area_icon = ttk.PhotoImage(file='ico/square.png').subsample(12,12)
+        area_button = ttk.Button(left_frame, image=area_icon, bootstyle="outline", command=self.mode_area)
+        area_button.image = area_icon
+        area_button.pack(pady=5)
+
+        select_icon = ttk.PhotoImage(file='ico/selection.png').subsample(12,12)
         select_button = ttk.Button(left_frame, image=select_icon, bootstyle="outline", command=self.mode_select)
         select_button.image = select_icon
         select_button.pack(pady=5)
@@ -79,6 +84,16 @@ class ImageEditorApp(BidFile):
         paste_button = ttk.Button(left_frame, image=paste_icon, bootstyle="outline", text="Coller", command=self.paste_cells)
         paste_button.image = paste_icon
         paste_button.pack(pady=5)
+
+        filpv_icon = ttk.PhotoImage(file='ico/flip-v.png').subsample(12,12)
+        filpv_button = ttk.Button(left_frame, image=filpv_icon, bootstyle="outline", text="Flip V", command=self.flipv_cells)
+        filpv_button.image = filpv_icon
+        filpv_button.pack(pady=5)
+
+        filph_icon = ttk.PhotoImage(file='ico/flip-h.png').subsample(12,12)
+        filph_button = ttk.Button(left_frame, image=filph_icon, bootstyle="outline", text="Flip H", command=self.fliph_cells)
+        filph_button.image = filph_icon
+        filph_button.pack(pady=5)
 
         grid_icon = ttk.PhotoImage(file='ico/grid.png').subsample(12,12)
         grid_button = ttk.Button(left_frame, image=grid_icon, bootstyle="outline", command=self.draw_grid)
@@ -161,6 +176,7 @@ class ImageEditorApp(BidFile):
         elif grid_y > 5:
             self.current_select_shape = grid_y - 3
             self.current_select_color = 5
+        self.paste_mode = False
         self.mode_draw()
 
     def update_coords(self, event):
@@ -187,6 +203,7 @@ class ImageEditorApp(BidFile):
             self.temp_outline = self.canvas.create_rectangle(x1, y1, x1 + width, y1 + height, outline="red", dash=(4, 4))
 
     def mode_draw(self):
+        self.paste_mode = False
         self.canvas.bind("<Button-1>", self.draw_cellules)
 
     def draw_cellules(self, event):
@@ -201,9 +218,14 @@ class ImageEditorApp(BidFile):
             self.bool_grid = False
             self.draw_grid()
 
+    def mode_area(self):
+        self.paste_mode = False
+        pass
+
     def mode_select(self):
         self.canvas.bind("<Button-1>", self.select_cellules)
         self.canvas.delete(f"cell_select")
+        self.paste_mode = False
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
 
     def select_cellules(self, event):
@@ -217,6 +239,7 @@ class ImageEditorApp(BidFile):
             self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
 
     def copy_cells(self):
+        self.canvas.delete(f"cell_select")
         selected_cells = []
         for y in range(self.grid_height):
             for x in range(self.grid_width):
@@ -226,6 +249,52 @@ class ImageEditorApp(BidFile):
         if self.bool_grid:
             self.bool_grid = False
             self.draw_grid()
+
+    def flipv_cells(self):
+        """Flip verticale des cellules dans le presse-papiers."""
+        if hasattr(self, 'grid_clipboard') and self.grid_clipboard:
+            max_y = max(cell[1] for cell in self.grid_clipboard)
+            min_y = min(cell[1] for cell in self.grid_clipboard)
+            flips = []
+            for cell in self.grid_clipboard:
+                x, y, shape, color = cell
+                new_y = max_y + min_y - y  # Flip vertical
+                # Inverser les shapes des triangles
+                if shape == 3:  # Triangle haut
+                    new_shape = 4  # Triangle bas
+                elif shape == 4:  # Triangle bas
+                    new_shape = 3  # Triangle haut
+                elif shape == 5:  # Triangle gauche
+                    new_shape = 6  # Triangle droit
+                elif shape == 6:  # Triangle droit
+                    new_shape = 5  # Triangle gauche
+                else:
+                    new_shape = shape  # Pas de modification pour les autres shapes
+                flips.append((x, new_y, new_shape, color))
+            self.grid_clipboard = flips
+
+    def fliph_cells(self):
+        """Flip horizontale des cellules dans le presse-papiers."""
+        if hasattr(self, 'grid_clipboard') and self.grid_clipboard:
+            max_x = max(cell[0] for cell in self.grid_clipboard)
+            min_x = min(cell[0] for cell in self.grid_clipboard)
+            flips = []
+            for cell in self.grid_clipboard:
+                x, y, shape, color = cell
+                new_x = max_x + min_x - x  # Flip horizontal
+                # Inverser les shapes des triangles
+                if shape == 3:  # Triangle haut
+                    new_shape = 6  # Pas de modification
+                elif shape == 4:  # Triangle bas
+                    new_shape = 5  # Pas de modification
+                elif shape == 5:  # Triangle gauche
+                    new_shape = 6  # Triangle droit
+                elif shape == 6:  # Triangle droit
+                    new_shape = 3  # Triangle gauche
+                else:
+                    new_shape = shape  # Pas de modification pour les autres shapes
+                flips.append((new_x, y, new_shape, color))
+            self.grid_clipboard = flips
 
     def paste_cells(self):
         if hasattr(self, 'grid_clipboard') and self.grid_clipboard:
