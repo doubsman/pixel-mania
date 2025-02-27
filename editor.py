@@ -1,10 +1,10 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog
-from tkinter.messagebox import showerror, askyesno
-from tkinter import colorchooser
-from PIL import Image, ImageOps, ImageTk, ImageFilter, ImageGrab
+from tkinter.messagebox import askyesno
+from PIL import ImageTk
 from bid_class import BidFile
 import numpy as np
+
 
 class ImageEditorApp(BidFile):
     def __init__(self, root):
@@ -21,6 +21,7 @@ class ImageEditorApp(BidFile):
         self.pen_size = 3
         self.pen_color = "black"
         self.bool_grid = False
+        self.bool_backup = False
 
         self.grid_bid_backup = None
         self.grid_sel_cells = None
@@ -32,11 +33,13 @@ class ImageEditorApp(BidFile):
         self.current_select_shape = 0
         self.current_select_color = 0
 
+        self.paste_mode = False
+
         self.initialize_ui()
 
     def initialize_ui(self):
         # Set the window icon
-        icon = ImageTk.PhotoImage(file='png/carre.png')
+        icon = ImageTk.PhotoImage(file='ico/carre.png')
         self.root.iconphoto(False, icon)
 
         # The left frame to contain the 4 buttons
@@ -45,19 +48,22 @@ class ImageEditorApp(BidFile):
         left_frame.pack(side="left", fill="y")
 
         image_icon = ttk.PhotoImage(file='ico/open.png').subsample(12,12)
-        image_button = ttk.Button(left_frame, image=image_icon, bootstyle="outline", command=self.open_image)
+        image_button = ttk.Button(left_frame, image=image_icon, bootstyle="outline", command=self.open_bid)
         image_button.image = image_icon
         image_button.pack(pady=5)
 
         new_icon = ttk.PhotoImage(file='ico/new.png').subsample(12,12)
-        new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.new_image)
+        new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.create_bid)
         new_button.image = new_icon
         new_button.pack(pady=5)
 
-        color_icon = ttk.PhotoImage(file='ico/draw.png').subsample(12,12)
-        color_button = ttk.Button(left_frame, image=color_icon, bootstyle="outline", command=self.mode_draw)
-        color_button.image = color_icon
-        color_button.pack(pady=5)
+        color_icon = ttk.PhotoImage(file='ico/invent.png')
+        self.palet = ttk.Canvas(left_frame, width=50, height=500)
+        self.palet.create_image(0, 0, anchor="nw", image=color_icon)
+        self.palet.image = color_icon
+        self.palet.pack()
+        self.palet.bind("<Button-1>", self.select_palet)
+        self.palet.create_rectangle(0, 0, 50, 50, fill="", outline="red", width=2, tags="cell_color")
 
         select_icon = ttk.PhotoImage(file='ico/select.png').subsample(12,12)
         select_button = ttk.Button(left_frame, image=select_icon, bootstyle="outline", command=self.mode_select)
@@ -70,7 +76,7 @@ class ImageEditorApp(BidFile):
         copy_button.pack(pady=5)
 
         paste_icon = ttk.PhotoImage(file='ico/paste.png').subsample(12,12)
-        paste_button = ttk.Button(left_frame, image=paste_icon, bootstyle="outline", text="Coller", command=lambda: self.paste_cells(self.paste_event))
+        paste_button = ttk.Button(left_frame, image=paste_icon, bootstyle="outline", text="Coller", command=self.paste_cells)
         paste_button.image = paste_icon
         paste_button.pack(pady=5)
 
@@ -79,18 +85,15 @@ class ImageEditorApp(BidFile):
         grid_button.image = grid_icon
         grid_button.pack(pady=5)
 
-        color_icon = ttk.PhotoImage(file='ico/invent.png')
-        self.palet = ttk.Canvas(left_frame, width=50, height=500)
-        self.palet.create_image(0, 0, anchor="nw", image=color_icon)
-        self.palet.image = color_icon
-        self.palet.pack()
-        self.palet.bind("<Button-1>", self.select_color)
-        self.palet.create_rectangle(0, 0, 50, 50, fill="", outline="red", width=2, tags="cell_color")
-
         save_icon = ttk.PhotoImage(file='ico/save.png').subsample(12,12)
-        save_button = ttk.Button(left_frame, image=save_icon, bootstyle="outline", command=self.save_image)
+        save_button = ttk.Button(left_frame, image=save_icon, bootstyle="outline", command=self.save_bid)
         save_button.image = save_icon
         save_button.pack(pady=5)
+
+        saveas_icon = ttk.PhotoImage(file='ico/saveas.png').subsample(12,12)
+        saveas_button = ttk.Button(left_frame, image=saveas_icon, bootstyle="outline", command=self.saveas_bid)
+        saveas_button.image = saveas_icon
+        saveas_button.pack(pady=5)
 
         # The right canvas for displaying the image
         self.canvas = ttk.Canvas(self.root, width=self.WIDTH, height=self.HEIGHT, border=2)
@@ -101,39 +104,49 @@ class ImageEditorApp(BidFile):
         self.coord_label.pack(side="bottom")
 
         # create new bid
-        self.new_image()
+        self.create_bid()
 
-    def open_image(self):
+    def open_bid(self):
         self.file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
         if self.file_path != '':
             imagebid = self.load_bidfile(self.file_path, self.WIDTH)
-            self.display_image(imagebid)
+            self.display_bid(imagebid)
             self.root.title(f'{self.tittle} [{self.file_path}]')
 
-    def new_image(self):
+    def create_bid(self):
         imagebid = self.new_bid(self.WIDTH)
-        self.display_image(imagebid)
+        self.display_bid(imagebid)
         self.root.title(f'{self.tittle} : [NEW]')
 
-    def display_image(self, imagebid):
+    def display_bid(self, imagebid):
         image = ImageTk.PhotoImage(imagebid)
         self.canvas.create_image(0, 0, anchor="nw", image=image)
         self.canvas.image = image
         self.grid_bid_backup = self.grid_bid
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.bool_grid = False
+        self.bool_backup = False
         self.draw_grid()
         self.mode_draw()
 
-    def save_image(self):
-        if self.file_path == '':
+    def save_bid(self):
+        if self.file_path == '' and self.bool_backup:
             self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
-        if self.file_path != '':
-                self.save_bidfiles(self.file_path)
-                self.file_path = self.path_bid
-                self.root.title(f'{self.tittle} [{self.file_path}]')
+        self.write_bid()
 
-    def select_color(self, event):
+    def saveas_bid(self):
+        if self.bool_backup:
+            self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
+            self.write_bid()
+    
+    def write_bid(self):
+        if self.file_path != '':
+            self.save_bidfiles(self.file_path)
+            self.file_path = self.path_bid
+            self.root.title(f'{self.tittle} [{self.file_path}]')
+            self.bool_backup = False
+
+    def select_palet(self, event):
         grid_y = int(event.y / 50)
         x1, y1 = (0), (grid_y * 50)
         x2, y2 = (50), ((grid_y+1) * 50)
@@ -148,17 +161,36 @@ class ImageEditorApp(BidFile):
         elif grid_y > 5:
             self.current_select_shape = grid_y - 3
             self.current_select_color = 5
+        self.mode_draw()
 
     def update_coords(self, event):
-        self.paste_event = event
         self.grid_x = int(event.x / self.image_scale) 
         self.grid_y = int(event.y / self.image_scale)
         self.coord_label.config(text=f"Coords: ({self.grid_x+1:02d}, {self.grid_y+1:02d})")
+        if self.paste_mode:
+            clipboard_cells = self.grid_clipboard
+            # Déterminer la position à coller les cellules
+            grid_x = int(event.x / self.image_scale)
+            grid_y = int(event.y / self.image_scale)
+
+            # Dessiner le contour temporaire
+            if hasattr(self, 'temp_outline'):
+                self.canvas.delete(self.temp_outline)
+            min_x = min([cell[0] for cell in clipboard_cells])
+            min_y = min([cell[1] for cell in clipboard_cells])
+            max_x = max([cell[0] for cell in clipboard_cells])
+            max_y = max([cell[1] for cell in clipboard_cells])
+            width = (max_x - min_x + 1) * self.image_scale
+            height = (max_y - min_y + 1) * self.image_scale
+            x1 = grid_x * self.image_scale
+            y1 = grid_y * self.image_scale
+            self.temp_outline = self.canvas.create_rectangle(x1, y1, x1 + width, y1 + height, outline="red", dash=(4, 4))
 
     def mode_draw(self):
         self.canvas.bind("<Button-1>", self.draw_cellules)
 
     def draw_cellules(self, event):
+        self.bool_backup = True
         self.grid_bid[self.grid_y][self.grid_x] = self.current_select_shape
         self.grid_colors[self.grid_y][self.grid_x] = self.current_select_color
         self.draw_cellule(self.grid_x, self.grid_y, self.current_select_shape, self.current_select_color)
@@ -171,6 +203,8 @@ class ImageEditorApp(BidFile):
 
     def mode_select(self):
         self.canvas.bind("<Button-1>", self.select_cellules)
+        self.canvas.delete(f"cell_select")
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
 
     def select_cellules(self, event):
         if self.grid_sel_cells[self.grid_y, self.grid_x] == 1:
@@ -180,7 +214,50 @@ class ImageEditorApp(BidFile):
             self.grid_sel_cells[self.grid_y, self.grid_x] = 1
             x1, y1 = (self.grid_x * self.image_scale), (self.grid_y * self.image_scale)
             x2, y2 = ((self.grid_x+1) * self.image_scale), ((self.grid_y+1) * self.image_scale)
-            self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=f"cell_select{self.grid_x}_{self.grid_y}")
+            self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
+
+    def copy_cells(self):
+        selected_cells = []
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                if self.grid_sel_cells[y, x] == 1:
+                    selected_cells.append((x, y, self.grid_bid[y][x], self.grid_colors[y][x]))
+        self.grid_clipboard = selected_cells
+        if self.bool_grid:
+            self.bool_grid = False
+            self.draw_grid()
+
+    def paste_cells(self):
+        if hasattr(self, 'grid_clipboard') and self.grid_clipboard:
+            self.paste_mode = True  # Activer le mode de collage
+            self.canvas.bind("<Button-1>", self.paste_cells_on_canvas)
+
+    def paste_cells_on_canvas(self, event):
+        if self.paste_mode:
+            self.bool_backup = True
+            clipboard_cells = self.grid_clipboard
+            # Déterminer la position à coller les cellules
+            grid_x = int(event.x / self.image_scale)
+            grid_y = int(event.y / self.image_scale)
+            
+            # Coller les cellules
+            min_x = min([cell[0] for cell in clipboard_cells])
+            min_y = min([cell[1] for cell in clipboard_cells])
+            for cell in clipboard_cells:
+                x, y, shape, color = cell
+                new_x = grid_x + (x - min_x)
+                new_y = grid_y + (y - min_y)
+                if 0 <= new_x < self.grid_width and 0 <= new_y < self.grid_height:
+                    self.grid_bid[new_y][new_x] = shape
+                    self.grid_colors[new_y][new_x] = color
+                    self.draw_cellule(new_x, new_y, shape, color)
+            
+            image = ImageTk.PhotoImage(self.image)
+            self.canvas.create_image(0, 0, anchor="nw", image=image)
+            self.canvas.image = image
+            if self.bool_grid:
+                self.bool_grid = False
+                self.draw_grid()
 
     def draw_grid(self):
         if not self.bool_grid:
@@ -195,39 +272,6 @@ class ImageEditorApp(BidFile):
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
             self.bool_grid = False
-
-    def change_color(self):
-        self.pen_color = colorchooser.askcolor(title="Select Pen Color")[1]
-
-    def copy_cells(self):
-        selected_cells = []
-        for y in range(self.grid_height):
-            for x in range(self.grid_width):
-                if self.grid_sel_cells[y, x] == 1:
-                    selected_cells.append((x, y, self.grid_bid[y][x], self.grid_colors[y][x]))
-        self.grid_clipboard = selected_cells
-
-    def paste_cells(self, event):
-        if hasattr(self, 'self.grid_clipboard'):
-            clipboard_cells = self.grid_clipboard
-            # Déterminer la position à coller les cellules
-            grid_x = int(event.x / self.image_scale)
-            grid_y = int(event.y / self.image_scale)
-            
-            # Coller les cellules
-            for cell in clipboard_cells:
-                x, y, shape, color = cell
-                new_x = grid_x + x - min([cell[0] for cell in clipboard_cells])
-                new_y = grid_y + y - min([cell[1] for cell in clipboard_cells])
-                if 0 <= new_x < self.grid_width and 0 <= new_y < self.grid_height:
-                    self.grid_bid[new_y][new_x] = shape
-                    self.grid_colors[new_y][new_x] = color
-                    self.draw_cellule(new_x, new_y, shape, color)
-            
-            image = ImageTk.PhotoImage(self.image)
-            self.canvas.create_image(0, 0, anchor="nw", image=image)
-            self.canvas.image = image
-
 
 if __name__ == "__main__":
     root = ttk.Window(themename="cosmo")

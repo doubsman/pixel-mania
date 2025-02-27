@@ -71,6 +71,7 @@ class BidFile:
                 else:
                     # not greys
                     color_indice = 0 if cell == 0 else 5
+                    self.grid_colors[row][column] = color_indice
 
                 self.draw_cellule(column, row, cell, color_indice)
 

@@ -23,3 +23,8 @@ ______________________________________________________________
 ______________________________________________________________
 # Ascii 2 Bid
 .\ascii2bid.py --path_ascii export/fence.ascii --path_bid export/fence5.bid
+
+
+______________________________________________________________
+# create EXE Windows from editor
+pyinstaller --noconfirm --onefile --windowed --add-data "./ico/*;." ./editor.py
