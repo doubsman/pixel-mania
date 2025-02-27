@@ -6,6 +6,12 @@ from bid_class import BidFile
 import numpy as np
 
 
+class Action:
+    def __init__(self, grid_bid, grid_colors, grid_sel_cells):
+        self.grid_bid = grid_bid
+        self.grid_colors = grid_colors
+        self.grid_sel_cells = grid_sel_cells
+
 class ImageEditorApp(BidFile):
     def __init__(self, root):
         BidFile.__init__(self)
@@ -38,6 +44,8 @@ class ImageEditorApp(BidFile):
         self.selection_start = None
         self.selection_end = None
         self.selection_rect = None
+        
+        self.history = []
 
         self.initialize_ui()
 
@@ -60,6 +68,11 @@ class ImageEditorApp(BidFile):
         new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.create_bid)
         new_button.image = new_icon
         new_button.pack(pady=5)
+
+        undo_icon = ttk.PhotoImage(file='ico/undo.png').subsample(12,12)
+        undo_button = ttk.Button(left_frame, image=undo_icon, bootstyle="outline", command=self.undo_action)
+        undo_button.image = undo_icon
+        undo_button.pack(pady=5)
 
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame, width=50, height=500)
@@ -124,6 +137,14 @@ class ImageEditorApp(BidFile):
 
         # create new bid
         self.create_bid()
+
+    def refresh_image(self):
+        image = ImageTk.PhotoImage(self.image)
+        self.canvas.create_image(0, 0, anchor="nw", image=image)
+        self.canvas.image = image
+        if self.bool_grid:
+            self.bool_grid = False
+            self.draw_grid()
 
     def open_bid(self):
         self.file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
@@ -215,16 +236,12 @@ class ImageEditorApp(BidFile):
         self.canvas.bind("<Button-1>", self.draw_cellules)
 
     def draw_cellules(self, event):
+        self.save_state()
         self.bool_backup = True
         self.grid_bid[self.grid_y][self.grid_x] = self.current_select_shape
         self.grid_colors[self.grid_y][self.grid_x] = self.current_select_color
         self.draw_cellule(self.grid_x, self.grid_y, self.current_select_shape, self.current_select_color)
-        image = ImageTk.PhotoImage(self.image)
-        self.canvas.create_image(0, 0, anchor="nw", image=image)
-        self.canvas.image = image
-        if self.bool_grid:
-            self.bool_grid = False
-            self.draw_grid()
+        self.refresh_image()
 
     def mode_area(self):
         self.paste_mode = False
@@ -364,6 +381,7 @@ class ImageEditorApp(BidFile):
 
     def paste_cells_on_canvas(self, event):
         if self.paste_mode:
+            self.save_state()
             self.bool_backup = True
             clipboard_cells = self.grid_clipboard
             # Déterminer la position à coller les cellules
@@ -381,13 +399,7 @@ class ImageEditorApp(BidFile):
                     self.grid_bid[new_y][new_x] = shape
                     self.grid_colors[new_y][new_x] = color
                     self.draw_cellule(new_x, new_y, shape, color)
-            
-            image = ImageTk.PhotoImage(self.image)
-            self.canvas.create_image(0, 0, anchor="nw", image=image)
-            self.canvas.image = image
-            if self.bool_grid:
-                self.bool_grid = False
-                self.draw_grid()
+            self.refresh_image()
 
     def draw_grid(self):
         if not self.bool_grid:
@@ -402,6 +414,28 @@ class ImageEditorApp(BidFile):
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
             self.bool_grid = False
+
+    def undo_action(self):
+        self.restore_state()
+
+    def save_state(self):
+        """Sauvegarde l'état actuel dans l'historique."""
+        action = Action(
+            np.copy(self.grid_bid),
+            np.copy(self.grid_colors),
+            np.copy(self.grid_sel_cells)
+        )
+        self.history.append(action)
+
+    def restore_state(self):
+        """Restaure l'état précédent à partir de l'historique."""
+        if self.history:
+            action = self.history.pop()
+            self.grid_bid = action.grid_bid
+            self.grid_colors = action.grid_colors
+            self.grid_sel_cells = action.grid_sel_cells
+            self.draw_bidfile()
+            self.refresh_image()
 
 if __name__ == "__main__":
     root = ttk.Window(themename="cosmo")
