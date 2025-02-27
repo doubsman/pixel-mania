@@ -35,6 +35,10 @@ class ImageEditorApp(BidFile):
 
         self.paste_mode = False
 
+        self.selection_start = None
+        self.selection_end = None
+        self.selection_rect = None
+
         self.initialize_ui()
 
     def initialize_ui(self):
@@ -200,10 +204,14 @@ class ImageEditorApp(BidFile):
             height = (max_y - min_y + 1) * self.image_scale
             x1 = grid_x * self.image_scale
             y1 = grid_y * self.image_scale
-            self.temp_outline = self.canvas.create_rectangle(x1, y1, x1 + width, y1 + height, outline="red", dash=(4, 4))
+            self.temp_outline = self.canvas.create_rectangle(x1, y1, x1 + width, y1 + height, outline="red", dash=(4, 4), tags='cells_paste')
+        else:
+            self.canvas.delete("cells_paste")
 
     def mode_draw(self):
         self.paste_mode = False
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.draw_cellules)
 
     def draw_cellules(self, event):
@@ -220,13 +228,61 @@ class ImageEditorApp(BidFile):
 
     def mode_area(self):
         self.paste_mode = False
-        pass
+        self.canvas.unbind("<Button-1>")
+        self.canvas.bind("<ButtonPress-1>", self.start_selection)
+        self.canvas.bind("<B1-Motion>", self.update_selection)
+        self.canvas.bind("<ButtonRelease-1>", self.end_selection)
 
-    def mode_select(self):
-        self.canvas.bind("<Button-1>", self.select_cellules)
+    def start_selection(self, event):
+         # Réinitialiser la sélection
         self.canvas.delete(f"cell_select")
         self.paste_mode = False
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_clipboard = None        
+        self.selection_start = (event.x, event.y)
+        self.selection_end = (event.x, event.y)
+        self.selection_rect = self.canvas.create_rectangle(
+            self.selection_start[0], self.selection_start[1],
+            self.selection_end[0], self.selection_end[1],
+            outline="blue", dash=(4, 4), tags="selection_rect"
+        )
+
+    def update_selection(self, event):
+        self.selection_end = (event.x, event.y)
+        self.canvas.coords(
+            self.selection_rect,
+            self.selection_start[0], self.selection_start[1],
+            self.selection_end[0], self.selection_end[1]
+        )
+
+    def end_selection(self, event):
+        self.selection_end = (event.x, event.y)
+        self.update_selected_cells()
+        self.canvas.delete("selection_rect")
+
+    def update_selected_cells(self):
+        start_x = min(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        start_y = min(self.selection_start[1], self.selection_end[1]) // self.image_scale
+        end_x = max(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        end_y = max(self.selection_start[1], self.selection_end[1]) // self.image_scale
+
+        for y in range(start_y, end_y + 1):
+            for x in range(start_x, end_x + 1):
+                self.grid_sel_cells[y, x] = 1
+                x1, y1 = (x * self.image_scale), (y * self.image_scale)
+                x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
+
+    def mode_select(self):
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonRelease-1>")
+        self.canvas.bind("<Button-1>", self.select_cellules)
+         # Réinitialiser la sélection
+        self.canvas.delete(f"cell_select")
+        self.paste_mode = False
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_clipboard = None
 
     def select_cellules(self, event):
         if self.grid_sel_cells[self.grid_y, self.grid_x] == 1:
@@ -239,7 +295,12 @@ class ImageEditorApp(BidFile):
             self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
 
     def copy_cells(self):
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.delete(f"cell_select")
+        self.grid_clipboard = []
+
         selected_cells = []
         for y in range(self.grid_height):
             for x in range(self.grid_width):
@@ -258,18 +319,18 @@ class ImageEditorApp(BidFile):
             flips = []
             for cell in self.grid_clipboard:
                 x, y, shape, color = cell
-                new_y = max_y + min_y - y  # Flip vertical
+                new_y = max_y + min_y - y
                 # Inverser les shapes des triangles
-                if shape == 3:  # Triangle haut
-                    new_shape = 4  # Triangle bas
-                elif shape == 4:  # Triangle bas
-                    new_shape = 3  # Triangle haut
-                elif shape == 5:  # Triangle gauche
-                    new_shape = 6  # Triangle droit
-                elif shape == 6:  # Triangle droit
-                    new_shape = 5  # Triangle gauche
+                if shape == 3:
+                    new_shape = 4
+                elif shape == 4:
+                    new_shape = 3
+                elif shape == 5:
+                    new_shape = 6
+                elif shape == 6:
+                    new_shape = 5
                 else:
-                    new_shape = shape  # Pas de modification pour les autres shapes
+                    new_shape = shape
                 flips.append((x, new_y, new_shape, color))
             self.grid_clipboard = flips
 
@@ -281,18 +342,18 @@ class ImageEditorApp(BidFile):
             flips = []
             for cell in self.grid_clipboard:
                 x, y, shape, color = cell
-                new_x = max_x + min_x - x  # Flip horizontal
+                new_x = max_x + min_x - x
                 # Inverser les shapes des triangles
-                if shape == 3:  # Triangle haut
-                    new_shape = 6  # Pas de modification
-                elif shape == 4:  # Triangle bas
-                    new_shape = 5  # Pas de modification
-                elif shape == 5:  # Triangle gauche
-                    new_shape = 6  # Triangle droit
-                elif shape == 6:  # Triangle droit
-                    new_shape = 3  # Triangle gauche
+                if shape == 3:
+                    new_shape = 6
+                elif shape == 4:
+                    new_shape = 5
+                elif shape == 5:
+                    new_shape = 4
+                elif shape == 6:
+                    new_shape = 3
                 else:
-                    new_shape = shape  # Pas de modification pour les autres shapes
+                    new_shape = shape
                 flips.append((new_x, y, new_shape, color))
             self.grid_clipboard = flips
 
