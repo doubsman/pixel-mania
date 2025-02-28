@@ -26,10 +26,9 @@ class ImageEditorApp(BidFile):
         self.file_path = ""
         self.pen_size = 3
         self.pen_color = "black"
-        self.bool_grid = False
+        self.bool_grid = True
         self.bool_backup = False
 
-        self.grid_bid_backup = None
         self.grid_sel_cells = None
         self.grid_clipboard = None
 
@@ -59,20 +58,9 @@ class ImageEditorApp(BidFile):
         left_frame['borderwidth'] = 5
         left_frame.pack(side="left", fill="y")
 
-        image_icon = ttk.PhotoImage(file='ico/open.png').subsample(12,12)
-        image_button = ttk.Button(left_frame, image=image_icon, bootstyle="outline", command=self.open_bid)
-        image_button.image = image_icon
-        image_button.pack(pady=5)
-
-        new_icon = ttk.PhotoImage(file='ico/plus.png').subsample(12,12)
-        new_button = ttk.Button(left_frame, image=new_icon, bootstyle="outline", command=self.create_bid)
-        new_button.image = new_icon
-        new_button.pack(pady=5)
-
-        undo_icon = ttk.PhotoImage(file='ico/undo.png').subsample(12,12)
-        undo_button = ttk.Button(left_frame, image=undo_icon, bootstyle="outline", command=self.undo_action)
-        undo_button.image = undo_icon
-        undo_button.pack(pady=5)
+        open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
+        new_button = self.create_button(left_frame, 'ico/plus.png', self.create_bid, "New")
+        undo_button = self.create_button(left_frame, 'ico/undo.png', self.undo_action, "Cancel")
 
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame, width=50, height=500)
@@ -82,50 +70,16 @@ class ImageEditorApp(BidFile):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 0, 50, 50, fill="", outline="red", width=2, tags="cell_color")
 
-        area_icon = ttk.PhotoImage(file='ico/square.png').subsample(12,12)
-        area_button = ttk.Button(left_frame, image=area_icon, bootstyle="outline", command=self.mode_area)
-        area_button.image = area_icon
-        area_button.pack(pady=5)
-
-        select_icon = ttk.PhotoImage(file='ico/selection.png').subsample(12,12)
-        select_button = ttk.Button(left_frame, image=select_icon, bootstyle="outline", command=self.mode_select)
-        select_button.image = select_icon
-        select_button.pack(pady=5)
-
-        copy_icon = ttk.PhotoImage(file='ico/copy.png').subsample(12,12)
-        copy_button = ttk.Button(left_frame, image=copy_icon, bootstyle="outline", text="Copier", command=self.copy_cells)
-        copy_button.image = copy_icon
-        copy_button.pack(pady=5)
-
-        paste_icon = ttk.PhotoImage(file='ico/paste.png').subsample(12,12)
-        paste_button = ttk.Button(left_frame, image=paste_icon, bootstyle="outline", text="Coller", command=self.paste_cells)
-        paste_button.image = paste_icon
-        paste_button.pack(pady=5)
-
-        filpv_icon = ttk.PhotoImage(file='ico/flip-v.png').subsample(12,12)
-        filpv_button = ttk.Button(left_frame, image=filpv_icon, bootstyle="outline", text="Flip V", command=self.flipv_cells)
-        filpv_button.image = filpv_icon
-        filpv_button.pack(pady=5)
-
-        filph_icon = ttk.PhotoImage(file='ico/flip-h.png').subsample(12,12)
-        filph_button = ttk.Button(left_frame, image=filph_icon, bootstyle="outline", text="Flip H", command=self.fliph_cells)
-        filph_button.image = filph_icon
-        filph_button.pack(pady=5)
-
-        grid_icon = ttk.PhotoImage(file='ico/grid.png').subsample(12,12)
-        grid_button = ttk.Button(left_frame, image=grid_icon, bootstyle="outline", command=self.draw_grid)
-        grid_button.image = grid_icon
-        grid_button.pack(pady=5)
-
-        save_icon = ttk.PhotoImage(file='ico/save.png').subsample(12,12)
-        save_button = ttk.Button(left_frame, image=save_icon, bootstyle="outline", command=self.save_bid)
-        save_button.image = save_icon
-        save_button.pack(pady=5)
-
-        saveas_icon = ttk.PhotoImage(file='ico/saveas.png').subsample(12,12)
-        saveas_button = ttk.Button(left_frame, image=saveas_icon, bootstyle="outline", command=self.saveas_bid)
-        saveas_button.image = saveas_icon
-        saveas_button.pack(pady=5)
+        area_button = self.create_button(left_frame, 'ico/square.png', self.mode_area, "Select Area")
+        select_button = self.create_button(left_frame, 'ico/selection.png', self.mode_select, "Select Cells")
+        copy_button = self.create_button(left_frame, 'ico/copy.png', self.copy_cells, "Copy")
+        cut_button = self.create_button(left_frame, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
+        paste_button = self.create_button(left_frame, 'ico/paste.png', self.paste_cells, "Cut")
+        filpv_button = self.create_button(left_frame, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        filph_button = self.create_button(left_frame, 'ico/flip-h.png', self.fliph_cells, "Flip H")
+        grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grid, "Flip H")
+        save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
+        saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
 
         # The right canvas for displaying the image
         self.canvas = ttk.Canvas(self.root, width=self.WIDTH, height=self.HEIGHT, border=2)
@@ -138,6 +92,13 @@ class ImageEditorApp(BidFile):
         # create new bid
         self.create_bid()
 
+    def create_button(self, parent, image_path, command, text="", pady=5):
+        image = ttk.PhotoImage(file=image_path).subsample(12, 12)
+        button = ttk.Button(parent, image=image, bootstyle="outline", command=command, text=text)
+        button.image = image
+        button.pack(pady=pady)
+        return button
+
     def refresh_image(self):
         image = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor="nw", image=image)
@@ -149,24 +110,15 @@ class ImageEditorApp(BidFile):
     def open_bid(self):
         self.file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
         if self.file_path != '':
-            imagebid = self.load_bidfile(self.file_path, self.WIDTH)
-            self.display_bid(imagebid)
-            self.root.title(f'{self.tittle} [{self.file_path}]')
+            self.root.title(f'{self.tittle} [{self.file_path}]')  
+            self.load_bidfile(self.file_path, self.WIDTH)
+            self.refresh_image()
+            self.mode_draw()
 
     def create_bid(self):
-        imagebid = self.new_bid(self.WIDTH)
-        self.display_bid(imagebid)
         self.root.title(f'{self.tittle} : [NEW]')
-
-    def display_bid(self, imagebid):
-        image = ImageTk.PhotoImage(imagebid)
-        self.canvas.create_image(0, 0, anchor="nw", image=image)
-        self.canvas.image = image
-        self.grid_bid_backup = self.grid_bid
-        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-        self.bool_grid = False
-        self.bool_backup = False
-        self.draw_grid()
+        self.new_bid(self.WIDTH)
+        self.refresh_image()
         self.mode_draw()
 
     def save_bid(self):
@@ -207,6 +159,10 @@ class ImageEditorApp(BidFile):
     def update_coords(self, event):
         self.grid_x = int(event.x / self.image_scale) 
         self.grid_y = int(event.y / self.image_scale)
+        if self.grid_y >= self.grid_height:
+            self.grid_y = self.grid_height-1
+        if self.grid_x >= self.grid_width:
+            self.grid_x = self.grid_width-1
         self.coord_label.config(text=f"Coords: ({self.grid_x+1:02d}, {self.grid_y+1:02d})")
         if self.paste_mode:
             clipboard_cells = self.grid_clipboard
@@ -311,7 +267,7 @@ class ImageEditorApp(BidFile):
             x2, y2 = ((self.grid_x+1) * self.image_scale), ((self.grid_y+1) * self.image_scale)
             self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
 
-    def copy_cells(self):
+    def copy_cells(self, cut=False):
         self.canvas.unbind("<ButtonPress-1>")
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
@@ -323,10 +279,11 @@ class ImageEditorApp(BidFile):
             for x in range(self.grid_width):
                 if self.grid_sel_cells[y, x] == 1:
                     selected_cells.append((x, y, self.grid_bid[y][x], self.grid_colors[y][x]))
+                    if cut:
+                        self.draw_cellule(x, y, 0, 0)
+        if cut:                        
+            self.refresh_image()
         self.grid_clipboard = selected_cells
-        if self.bool_grid:
-            self.bool_grid = False
-            self.draw_grid()
 
     def flipv_cells(self):
         """Flip verticale des cellules dans le presse-papiers."""
