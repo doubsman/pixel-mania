@@ -17,8 +17,8 @@ class BidFile:
         self.path_bid = None
         self.grid_bid = None
         self.path_color = None
-        self.grid_color = None
-        self.bool_color = False
+        self.grid_colors = None
+        self.bool_color = True
         self.grid_width = 0
         self.grid_height = 0
         self.image_scale = 1
@@ -50,6 +50,7 @@ class BidFile:
     def new_bid(self, result_width=None):
         if result_width is not None:
             self.result_width = result_width
+        self.bool_color = True
         self.grid_height = self.grid_width = 48
         self.grid_bid = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
@@ -74,6 +75,26 @@ class BidFile:
                     self.grid_colors[row][column] = color_indice
 
                 self.draw_cellule(column, row, cell, color_indice)
+
+    def draw_part_cells(self, cells):
+        min_x = min([cell[0] for cell in cells])
+        min_y = min([cell[1] for cell in cells])
+        max_x = max([cell[0] for cell in cells])
+        max_y = max([cell[1] for cell in cells])
+
+        width = (max_x - min_x + 1) * self.image_scale
+        height = (max_y - min_y + 1) * self.image_scale
+
+        backup_draw = self.draw
+        thumbnail = Image.new('RGB', (width, height), (255, 255, 255))
+        self.draw = ImageDraw.Draw(thumbnail)
+        for cell in cells:
+            column, row, cell, color_indice = cell
+            column -= min_x
+            row -= min_y
+            self.draw_cellule(column, row, cell, color_indice)
+        self.draw = backup_draw
+        return thumbnail, width/height
 
     def draw_cellule(self, x, y, cell_type, cell_color):
         """Dessine une cellule en fonction de son type."""

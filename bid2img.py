@@ -26,7 +26,7 @@ def draw_cellule(draw, x, y, cell_type, cell_color, image_scale):
         # 1 cellule = 1 pixel
         draw.point((x, y), fill=cell_color)
     else:
-        draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+        #draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
         if cell_type == 1:  # carré noir
             draw.rectangle([(left, top), (right, bottom)], fill=cell_color, outline=(0, 0, 0))
         elif cell_type == 3:  # triangle en bas à droite
