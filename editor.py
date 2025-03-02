@@ -2,7 +2,7 @@ import ttkbootstrap as ttk
 from tkinter import filedialog
 from tkinter.messagebox import askyesno
 from PIL import ImageTk, Image
-from bid_class import BidFile
+from class_bid import BidFile
 import numpy as np
 
 
