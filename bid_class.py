@@ -57,7 +57,7 @@ class BidFile:
         self.draw_bidfile()
         return self.image
 
-    def draw_bidfile(self):
+    def draw_bidfile(self, bool_outline=False):
         self.image_scale = int(self.result_width / float(self.grid_width))
         self.image = Image.new('RGB', (self.grid_width * self.image_scale, self.grid_height * self.image_scale), color=(255, 255, 255))
         self.draw = ImageDraw.Draw(self.image)
@@ -66,7 +66,7 @@ class BidFile:
                 cell = self.grid_bid[row][column]
                 if self.bool_color:
                     color_indice = self.grid_colors[row][column]
-                    # plain square if color
+                    # plain square if color: compatiblity old version
                     if cell == 0 and color_indice > 0:
                         cell = 1
                 else:
@@ -74,7 +74,37 @@ class BidFile:
                     color_indice = 0 if cell == 0 else 5
                     self.grid_colors[row][column] = color_indice
 
-                self.draw_cellule(column, row, cell, color_indice)
+                self.draw_cellule(column, row, cell, color_indice, bool_outline)
+
+    def draw_cellule(self, x, y, cell_type, cell_color, bool_outline=False):
+        """Dessine une cellule en fonction de son type."""
+        left = x * self.image_scale
+        top = y * self.image_scale
+        right = (x + 1) * self.image_scale
+        bottom = (y + 1) * self.image_scale
+        color = GRAY_SCALE_DRAW[cell_color]
+
+        if self.image_scale == 1:
+            # 1 cellule = 1 pixel
+            self.draw.point((x, y), fill=color)
+        else:
+            if bool_outline:
+                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+            else:
+                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))
+            if cell_type == 1:  # carré plein
+                if bool_outline: 
+                    self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
+                else:
+                    self.draw.rectangle([(left, top), (right, bottom)], fill=color)
+            elif cell_type == 3:  # triangle en bas à droite
+                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
+            elif cell_type == 4:  # triangle en haut à droite
+                self.draw.polygon([(left, top), (right, top), (right, bottom)], fill=color)
+            elif cell_type == 5:  # triangle en haut à gauche
+                self.draw.polygon([(left, top), (right, top), (left, bottom)], fill=color)
+            elif cell_type == 6:  # triangle en bas à gauche
+                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
     def draw_part_cells(self, cells):
         min_x = min([cell[0] for cell in cells])
@@ -96,30 +126,6 @@ class BidFile:
         self.draw = backup_draw
         return thumbnail, width/height
 
-    def draw_cellule(self, x, y, cell_type, cell_color):
-        """Dessine une cellule en fonction de son type."""
-        left = x * self.image_scale
-        top = y * self.image_scale
-        right = (x + 1) * self.image_scale
-        bottom = (y + 1) * self.image_scale
-        color = GRAY_SCALE_DRAW[cell_color]
-
-        if self.image_scale == 1:
-            # 1 cellule = 1 pixel
-            self.draw.point((x, y), fill=color)
-        else:
-            self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))#, outline=(0, 0, 0))
-            if cell_type == 1:  # carré noir
-                self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
-            elif cell_type == 3:  # triangle en bas à droite
-                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
-            elif cell_type == 4:  # triangle en haut à droite
-                self.draw.polygon([(left, top), (right, top), (right, bottom)], fill=color)
-            elif cell_type == 5:  # triangle en haut à gauche
-                self.draw.polygon([(left, top), (right, top), (left, bottom)], fill=color)
-            elif cell_type == 6:  # triangle en bas à gauche
-                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
-
     def save_bidfile(self, path_bid):
         if not path_bid.endswith(".bid"):
             self.path_bid = path_bid + '.bid'
@@ -129,10 +135,15 @@ class BidFile:
         path_color = self.path_bid.replace('.bid','.color')
         np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
 
-    def save_imagefile(self, path_image):
+    def save_imagefile(self, path_image, image_scale=50):
         if not path_image.endswith(".png"):
             path_image = path_image + '.png'
+        backup_result_width = self.result_width
+        self.result_width = image_scale * self.grid_width
+        self.draw_bidfile(bool_outline=True)
         self.image.save(path_image)
+        self.result_width = backup_result_width
+        self.draw_bidfile()
 
 
 if __name__ == '__main__':

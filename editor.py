@@ -103,7 +103,7 @@ class ImageEditorApp(BidFile):
         self.canvas.pack()
         self.canvas.bind("<Motion>", self.update_coords)
 
-        self.root.bind("<Control-c>", self.undo_action)
+        self.root.bind("<Control-z>", self.undo_action)
 
         # create new bid
         self.create_bid()
@@ -155,9 +155,11 @@ class ImageEditorApp(BidFile):
             self.bool_backup = False
 
     def save_image(self):
-        file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
-        if file_img != '':
-            self.save_imagefile(file_img)
+        if self.file_path == '':
+            file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
+        else:
+            file_img = self.file_path.replace('.bid',f'_{self.grid_width}x{self.grid_height}.png')
+        self.save_imagefile(file_img)
 
     def select_palet(self, event):
         grid_y = int(event.y / 50)
