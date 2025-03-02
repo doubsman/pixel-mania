@@ -81,6 +81,7 @@ class ImageEditorApp(BidFile):
         rotate_l_button = self.create_button(left_frame, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
         rotate_r_button = self.create_button(left_frame, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grid, "Flip H")
+        save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Flip H")
 
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame2, width=50, height=500)
@@ -143,15 +144,20 @@ class ImageEditorApp(BidFile):
 
     def saveas_bid(self):
         if self.bool_backup:
-            self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
+            self.file_path = filedialog.asksaveasfilename(title="Save Bid File", filetypes=[("Bid Files", "*.bid")])
             self.write_bid()
     
     def write_bid(self):
         if self.file_path != '':
-            self.save_bidfiles(self.file_path)
+            self.save_bidfile(self.file_path)
             self.file_path = self.path_bid
             self.root.title(f'{self.tittle} [{self.file_path}]')
             self.bool_backup = False
+
+    def save_image(self):
+        file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
+        if file_img != '':
+            self.save_imagefile(file_img)
 
     def select_palet(self, event):
         grid_y = int(event.y / 50)

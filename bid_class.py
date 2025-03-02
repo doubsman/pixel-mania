@@ -120,7 +120,7 @@ class BidFile:
             elif cell_type == 6:  # triangle en bas à gauche
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
-    def save_bidfiles(self, path_bid):
+    def save_bidfile(self, path_bid):
         if not path_bid.endswith(".bid"):
             self.path_bid = path_bid + '.bid'
         else:
@@ -128,6 +128,12 @@ class BidFile:
         np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
         path_color = self.path_bid.replace('.bid','.color')
         np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
+
+    def save_imagefile(self, path_image):
+        if not path_image.endswith(".png"):
+            path_image = path_image + '.png'
+        self.image.save(path_image)
+
 
 if __name__ == '__main__':
     Myclass = BidFile()
