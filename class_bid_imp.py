@@ -24,17 +24,19 @@ CHARTS_ASCII = {
 }
 
 class ImageProcessor:
-    def __init__(self, path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, threshold=128, display_cells=False, display_cells_scale_reduce=10, no_save_bid=True, model_ascii=1, no_save_ascii=True):
-        self.path_image = path_image
-        self.grid_width = grid_width
-        self.grid_height = grid_height
-        self.triangle_ratio = triangle_ratio
-        self.threshold = threshold
-        self.display_cells = display_cells
-        self.display_cells_scale_reduce = display_cells_scale_reduce
-        self.no_save_bid = no_save_bid
-        self.model_ascii = model_ascii
-        self.no_save_ascii = no_save_ascii
+    def __init__(self):
+        self.bid = []
+        self.shape_codes = []
+        self.color_codes = []
+        self.ascii_codes = []
+        self.path_image = None
+        self.grid_width = None
+        self.grid_height = None
+        self.triangle_ratio = None
+        self.threshold = None
+        self.display_cells = None
+        self.display_cells_scale_reduce = None
+        self.model_ascii = None
 
     def classify_shape(self, cell_image, threshold=128, triangle_ratio=0.2):
         pixels = np.array(cell_image)
@@ -92,15 +94,25 @@ class ImageProcessor:
         else:
             return 5  # Noir
 
-    def process_image(self):
+    def process_image(self , path_image, grid_width=10, grid_height=10, triangle_ratio=0.2, threshold=128, display_cells=False, display_cells_scale_reduce=10, model_ascii=1):
+        self.path_image = path_image
+        self.grid_width = grid_width
+        self.grid_height = grid_height
+        self.triangle_ratio = triangle_ratio
+        self.threshold = threshold
+        self.display_cells = display_cells
+        self.display_cells_scale_reduce = display_cells_scale_reduce
+        self.model_ascii = model_ascii
+
         image = Image.open(self.path_image).convert('L')
         width, height = image.size
         cell_width = math.floor(width / self.grid_width)
         cell_height = math.floor(height / self.grid_height)
-        shape_codes = np.zeros((self.grid_height, self.grid_width), dtype=int)
-        color_codes = np.zeros((self.grid_height, self.grid_width), dtype=int)
-        ascii_codes = np.zeros((self.grid_height, self.grid_width), dtype='<U2')
+        self.shape_codes = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.color_codes = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.ascii_codes = np.zeros((self.grid_height, self.grid_width), dtype='<U2')
         chart_ascii = CHARTS_ASCII[self.model_ascii]
+        self.bid = []
 
         for row in range(self.grid_height):
             if self.display_cells:
@@ -117,10 +129,10 @@ class ImageProcessor:
                 shape_code = self.classify_shape(cell, self.threshold, self.triangle_ratio)
                 if shape_code == 0 and color_code == 5:
                     color_code = 0
-                shape_codes[row, col] = shape_code
-                color_codes[row, col] = color_code
-                ascii_codes[row, col] = chart_ascii[shape_code]
-
+                self.shape_codes[row, col] = shape_code
+                self.color_codes[row, col] = color_code
+                self.ascii_codes[row, col] = chart_ascii[shape_code]
+                self.bid.append((col, row, shape_code, color_code))
                 if self.display_cells:
                     charts_ascii = "▩⬚X◤◣◢◥"
                     image_display = image.crop((left, top, right, bottom))
@@ -133,24 +145,31 @@ class ImageProcessor:
                                                         f'┌ {row:02d},{col:02d} {charts_ascii[shape_code]} ')
             if self.display_cells:
                 print('\n'.join(cells_out_lines))
+        return self.bid
 
-        if shape_codes is not None and not self.no_save_ascii:
-            filename_asc = os.path.splitext(os.path.basename(self.path_image))[0] + '.ascii'
-            path_asc = os.path.join('wrk', filename_asc)
-            np.savetxt(path_asc, ascii_codes, fmt='%s', delimiter="", encoding='utf-8')
-
-        if shape_codes is not None and not self.no_save_bid:
+    def save_bid(self):
+        if self.shape_codes is not None:
             filename_bid = os.path.splitext(os.path.basename(self.path_image))[0] + '.bid'
             path_bid = os.path.join('wrk', filename_bid)
-            np.savetxt(path_bid, shape_codes, fmt='%i', delimiter="")
+            np.savetxt(path_bid, self.shape_codes, fmt='%i', delimiter="")
 
             filename_col = os.path.splitext(os.path.basename(self.path_image))[0] + '.color'
             path_col = os.path.join('wrk', filename_col)
-            np.savetxt(path_col, color_codes, fmt='%i', delimiter="")
+            np.savetxt(path_col, self.color_codes, fmt='%i', delimiter="")
 
-            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=self.no_save_bid, bool_no_display_image=False)
-            find_shape = np.where(shape_codes > 1)
+            bid_2_img(path_bid=path_bid, image_scale=50, bool_no_save=False, bool_no_display_image=False)
+            find_shape = np.where(self.shape_codes > 1)
             model_ascii = 3 if find_shape[0].size == 0 else 1
             bid_2_ascii(path_bid=path_bid, model_ascii=model_ascii)
+    
+    def save_ascii(self):
+        if self.shape_codes is not None:
+            filename_asc = os.path.splitext(os.path.basename(self.path_image))[0] + '.ascii'
+            path_asc = os.path.join('wrk', filename_asc)
+            np.savetxt(path_asc, self.ascii_codes, fmt='%s', delimiter="", encoding='utf-8')
 
-        return ascii_codes
+
+
+
+
+

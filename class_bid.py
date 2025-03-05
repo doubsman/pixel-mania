@@ -26,6 +26,7 @@ class BidFile:
         self.result_height = 0
         self.image = None
         self.draw = None
+        self.bid = []
 
     def load_bidfile(self, path_bid, result_width=None):
         if result_width is not None:
@@ -61,6 +62,7 @@ class BidFile:
         self.image_scale = int(self.result_width / float(self.grid_width))
         self.image = Image.new('RGB', (self.grid_width * self.image_scale, self.grid_height * self.image_scale), color=(255, 255, 255))
         self.draw = ImageDraw.Draw(self.image)
+        self.bid = []
         for row in range(self.grid_height):
             for column in range(self.grid_width):
                 cell = self.grid_bid[row][column]
@@ -73,7 +75,7 @@ class BidFile:
                     # not greys
                     color_indice = 0 if cell == 0 else 5
                     self.grid_colors[row][column] = color_indice
-
+                self.bid.append((column, row, cell, color_indice))
                 self.draw_cellule(column, row, cell, color_indice, bool_outline)
 
     def draw_cellule(self, x, y, cell_type, cell_color, bool_outline=False):
@@ -106,7 +108,7 @@ class BidFile:
             elif cell_type == 6:  # triangle en bas à gauche
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
-    def draw_part_cells(self, cells):
+    def draw_part_cells(self, cells):  #cell(column, row, cell, color_indice)
         min_x = min([cell[0] for cell in cells])
         min_y = min([cell[1] for cell in cells])
         max_x = max([cell[0] for cell in cells])
@@ -122,7 +124,7 @@ class BidFile:
             column, row, cell, color_indice = cell
             column -= min_x
             row -= min_y
-            self.draw_cellule(column, row, cell, color_indice)
+            self.draw_cellule(column, row, cell, color_indice, True)
         self.draw = backup_draw
         return thumbnail, width/height
 

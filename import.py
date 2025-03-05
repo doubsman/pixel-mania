@@ -1,92 +1,126 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
+import ttkbootstrap as ttk
+from tkinter import filedialog, messagebox, Entry
+from PIL import ImageTk
 from class_bid_imp import ImageProcessor
+from class_bid import BidFile
 
 class ImageProcessorApp:
     def __init__(self, root):
+        self.class_ImageProcessor = ImageProcessor()
+        self.class_BidFile = BidFile()
         self.root = root
-        self.root.title("Image to BID Converter")
+        self.path_image = None
+        self.title = "Image to BID Converter"
+        self.grid_width = ttk.IntVar(value=48)
+        self.grid_height = ttk.IntVar(value=48)
+        self.triangle_ratio = ttk.DoubleVar(value=0.30)
+        self.threshold = ttk.IntVar(value=128)
+        self.display_cells = ttk.BooleanVar(value=False)
+        self.display_cells_scale_reduce = ttk.IntVar(value=10)
+        self.model_ascii = ttk.IntVar(value=1)
+        self.sync_grid_dimensions = ttk.BooleanVar(value=True)
+        self.root.title(self.title)
 
-        self.path_image = tk.StringVar()
-        self.grid_width = tk.IntVar(value=48)
-        self.grid_height = tk.IntVar(value=48)
-        self.triangle_ratio = tk.DoubleVar(value=0.30)
-        self.threshold = tk.IntVar(value=128)
-        self.display_cells = tk.BooleanVar(value=False)
-        self.display_cells_scale_reduce = tk.IntVar(value=10)
-        self.no_save_bid = tk.BooleanVar(value=True)
-        self.model_ascii = tk.IntVar(value=1)
-        self.no_save_ascii = tk.BooleanVar(value=True)
+        self.initialize_ui()
 
-        self.create_widgets()
+    def initialize_ui(self):
+        # Set the window icon
+        icon = ImageTk.PhotoImage(file='ico/carre.png')
+        self.root.iconphoto(False, icon)
 
-    def create_widgets(self):
-        tk.Label(self.root, text="Image Path:").grid(row=0, column=0, sticky=tk.W)
-        tk.Entry(self.root, textvariable=self.path_image, width=50).grid(row=0, column=1, columnspan=2)
-        tk.Button(self.root, text="Browse", command=self.browse_image).grid(row=0, column=3)
+        # Create a frame for the options
+        options_frame = ttk.Frame(self.root, width=250)
+        options_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ns")
 
-        tk.Label(self.root, text="Grid Width:").grid(row=1, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=10, to=100, orient=tk.HORIZONTAL, variable=self.grid_width, command=self.update_parameters).grid(row=1, column=1)
+        # Create a frame for the canvas
+        canvas_frame = ttk.Frame(self.root)
+        canvas_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        tk.Label(self.root, text="Grid Height:").grid(row=2, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=10, to=100, orient=tk.HORIZONTAL, variable=self.grid_height, command=self.update_parameters).grid(row=2, column=1)
+        # Configure the grid to expand the canvas frame
+        self.root.grid_columnconfigure(1, weight=1)
+        self.root.grid_rowconfigure(0, weight=1)
 
-        tk.Label(self.root, text="Triangle Ratio:").grid(row=3, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=0.01, to=1.0, resolution=0.01, orient=tk.HORIZONTAL, variable=self.triangle_ratio, command=self.update_parameters).grid(row=3, column=1)
+        # Add widgets to the options frame
+        self.add_option(options_frame, "Grid Width:", self.grid_width, 1, 1, 200, self.update_grid_width)
+        self.add_option(options_frame, "Grid Height:", self.grid_height, 3, 1, 200, self.update_grid_height)
+        ttk.Checkbutton(options_frame, text="Sync Grid Dimensions", variable=self.sync_grid_dimensions).grid(row=5, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
+        self.add_option(options_frame, "Triangle Ratio:", self.triangle_ratio, 6, 0.0, 1.0, self.update_parameters)
+        self.add_option(options_frame, "Threshold:", self.threshold, 8, 0, 256, self.update_parameters)
+        ttk.Checkbutton(options_frame, text="Display Cells", variable=self.display_cells, command=self.update_parameters).grid(row=10, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
+        self.add_option(options_frame, "Display Cells Scale Reduce:", self.display_cells_scale_reduce, 11, 1, 50, self.update_parameters)
+        self.add_option(options_frame, "Model ASCII:", self.model_ascii, 14, 1, 4, self.update_parameters)
 
-        tk.Label(self.root, text="Threshold:").grid(row=4, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.threshold, command=self.update_parameters).grid(row=4, column=1)
+        ttk.Button(options_frame, text="Reset to Default", command=self.reset_to_default).grid(row=17, column=0, columnspan=3, padx=10, pady=5)
+        ttk.Button(options_frame, text="Load Image...", command=self.browse_image).grid(row=18, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save bid file...", command=self.class_ImageProcessor.save_bid).grid(row=19, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save image file...", command=self.browse_image).grid(row=20, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save ASCII file...", command=self.class_ImageProcessor.save_ascii).grid(row=21, column=0, columnspan=2, padx=10, pady=5)
 
-        tk.Checkbutton(self.root, text="Display Cells", variable=self.display_cells, command=self.update_parameters).grid(row=5, column=0, columnspan=2, sticky=tk.W)
+        # Add the canvas to the canvas frame
+        self.canvas = ttk.Canvas(canvas_frame, width=1024, height=1024, border=2)
+        self.canvas.pack(expand=True, fill="both")
 
-        tk.Label(self.root, text="Display Cells Scale Reduce:").grid(row=6, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=1, to=20, orient=tk.HORIZONTAL, variable=self.display_cells_scale_reduce, command=self.update_parameters).grid(row=6, column=1)
-
-        tk.Checkbutton(self.root, text="No Save BID", variable=self.no_save_bid, command=self.update_parameters).grid(row=7, column=0, columnspan=2, sticky=tk.W)
-
-        tk.Label(self.root, text="Model ASCII:").grid(row=8, column=0, sticky=tk.W)
-        tk.Scale(self.root, from_=1, to=4, orient=tk.HORIZONTAL, variable=self.model_ascii, command=self.update_parameters).grid(row=8, column=1)
-
-        tk.Checkbutton(self.root, text="No Save ASCII", variable=self.no_save_ascii, command=self.update_parameters).grid(row=9, column=0, columnspan=2, sticky=tk.W)
-
-        self.result_label = tk.Label(self.root, text="")
-        self.result_label.grid(row=10, column=0, columnspan=2)
-
-        self.ascii_text = tk.Text(self.root, wrap=tk.WORD, height=40, width=120, font=("Consolas", 8))
-        self.ascii_text.grid(row=11, column=0, columnspan=4)
+    def add_option(self, frame, label_text, variable, row, min_val, max_val, update_command):
+        ttk.Label(frame, text=label_text).grid(row=row, column=0, sticky=ttk.W, padx=10, pady=5)
+        entry = ttk.Entry(frame, textvariable=variable, width=10)
+        entry.grid(row=row, column=1, sticky=ttk.W, padx=10, pady=5)
+        entry.bind("<Return>", update_command)
+        ttk.Scale(frame, from_=min_val, to=max_val, orient=ttk.HORIZONTAL, variable=variable, command=update_command, length=200).grid(row=row+1, column=0, columnspan=2, padx=10, pady=5)
 
     def browse_image(self):
         file_path = filedialog.askopenfilename()
         if file_path:
-            self.path_image.set(file_path)
+            self.path_image = file_path
+            self.root.title(f'{self.title} [{self.path_image}]')
             self.update_parameters()
 
-    def update_parameters(self, event=None):
-        try:
-            processor = ImageProcessor(
-                path_image=self.path_image.get(),
-                grid_width=self.grid_width.get(),
-                grid_height=self.grid_height.get(),
-                triangle_ratio=self.triangle_ratio.get(),
-                threshold=self.threshold.get(),
-                display_cells=self.display_cells.get(),
-                display_cells_scale_reduce=self.display_cells_scale_reduce.get(),
-                no_save_bid=self.no_save_bid.get(),
-                model_ascii=self.model_ascii.get(),
-                no_save_ascii=self.no_save_ascii.get()
-            )
-            ascii_codes = processor.process_image()
-            self.display_ascii(ascii_codes)
-            self.result_label.config(text="Processing complete!")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+    def update_grid_width(self, event=None):
+        value = int(self.grid_width.get())
+        self.grid_width.set(value)
+        if self.sync_grid_dimensions.get():
+            self.grid_height.set(value)
+        self.update_parameters()
 
-    def display_ascii(self, ascii_codes):
-        self.ascii_text.delete(1.0, tk.END)
-        for row in ascii_codes:
-            self.ascii_text.insert(tk.END, ''.join(row) + '\n')
+    def update_grid_height(self, event=None):
+        value = int(self.grid_height.get())
+        self.grid_height.set(value)
+        if self.sync_grid_dimensions.get():
+            self.grid_width.set(value)
+        self.update_parameters()
+
+    def update_parameters(self, event=None):
+        if self.path_image:
+            try:
+                cells_bid = self.class_ImageProcessor.process_image(
+                    path_image=self.path_image,
+                    grid_width=self.grid_width.get(),
+                    grid_height=self.grid_height.get(),
+                    triangle_ratio=self.triangle_ratio.get(),
+                    threshold=self.threshold.get(),
+                    display_cells=self.display_cells.get(),
+                    display_cells_scale_reduce=self.display_cells_scale_reduce.get(),
+                    model_ascii=self.model_ascii.get()
+                )
+                self.class_BidFile.image_scale = 20
+                image, ratio = self.class_BidFile.draw_part_cells(cells_bid)
+                image = ImageTk.PhotoImage(image)
+                self.canvas.create_image(0, 0, anchor="nw", image=image)
+                self.canvas.image = image
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+    def reset_to_default(self):
+        self.grid_width.set(48)
+        self.grid_height.set(48)
+        self.triangle_ratio.set(0.30)
+        self.threshold.set(128)
+        self.display_cells.set(False)
+        self.display_cells_scale_reduce.set(10)
+        self.model_ascii.set(1)
+        self.sync_grid_dimensions.set(False)
+        self.update_parameters()
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = ttk.Window(themename="cosmo")
     app = ImageProcessorApp(root)
     root.mainloop()

@@ -30,7 +30,7 @@ class ImageEditorApp(BidFile):
         self.bool_grid = True
         self.bool_backup = False
 
-        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_sel_cells = []
         self.grid_clipboard = []
 
         self.grid_x = 0
@@ -277,8 +277,8 @@ class ImageEditorApp(BidFile):
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.select_cellules)
-         # Réinitialiser la sélection
-        #self.canvas.delete(f"cell_select")
+        if len(self.grid_sel_cells) ==0:
+            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.paste_mode = False
         self.grid_clipboard = []
         if self.image_over_id !=0:
