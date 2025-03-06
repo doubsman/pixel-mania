@@ -125,8 +125,9 @@ class ImageEditorApp(BidFile):
             self.draw_grid()
 
     def open_bid(self):
-        self.file_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
-        if self.file_path != '':
+        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
+        if bid_path != '':
+            self.file_path = bid_path
             self.root.title(f'{self.tittle} [{self.file_path}]')  
             self.load_bidfile(self.file_path, self.WIDTH)
             self.refresh_image()
