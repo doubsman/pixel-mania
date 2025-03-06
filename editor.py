@@ -80,8 +80,9 @@ class ImageEditorApp(BidFile):
         filph_button = self.create_button(left_frame, 'ico/flip-h.png', self.fliph_cells, "Flip H")
         rotate_l_button = self.create_button(left_frame, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
         rotate_r_button = self.create_button(left_frame, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
-        grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grid, "Flip H")
-        save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Flip H")
+        inverse_button = self.create_button(left_frame, 'ico/inverser.png', self.inverse_colors, "Grid")
+        grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grid, "Grid")
+        save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
 
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame2, width=50, height=500)
@@ -159,7 +160,7 @@ class ImageEditorApp(BidFile):
             file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
         else:
             file_img = self.file_path.replace('.bid',f'_{self.grid_width}x{self.grid_height}.png')
-        self.save_imagefile(file_img)
+        self.save_imagefile(file_img, bool_outline=self.bool_grid)
 
     def select_palet(self, event):
         grid_y = int(event.y / 50)
@@ -277,7 +278,7 @@ class ImageEditorApp(BidFile):
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.select_cellules)
-        if len(self.grid_sel_cells) ==0:
+        if len(self.grid_sel_cells) == 0:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.paste_mode = False
         self.grid_clipboard = []
@@ -482,6 +483,48 @@ class ImageEditorApp(BidFile):
                 rotate.append((new_x, new_y, new_shape, color))
             self.grid_clipboard = rotate
             self.redraw_thumbnail()
+
+    def inverse_colors(self):
+        if len(self.canvas.gettags("cell_select")) > 0:
+            self.save_state()
+            for y in range(self.grid_height):
+                for x in range(self.grid_width):
+                    if self.grid_sel_cells[y, x] == 1:
+                        color_indice = self.grid_colors[y, x]
+                        shape = self.grid_bid[y, x]
+                        shape, color_indice = self.inverse_cell(shape, color_indice)
+                        self.grid_colors[y, x] = color_indice
+                        self.grid_bid[y, x] = shape
+                        self.draw_cellule(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
+            self.refresh_image()
+        elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
+            self.save_state()
+            invert_cells = []
+            for cell in self.grid_clipboard:
+                column, row, shape, color_indice = cell
+                inv_shape, inv_color_indice = self.inverse_cell(shape, color_indice)
+                invert_cells.append((column, row, inv_shape, inv_color_indice))
+            self.grid_clipboard = invert_cells
+            self.redraw_thumbnail()
+    
+    def inverse_cell(self, shape, color_indice):
+        new_color_indice = color_indice
+        if shape < 2:
+            if color_indice == 0:
+                new_color_indice = 5
+                new_shape = 1
+            if color_indice == 5:
+                new_color_indice = 0
+                new_shape = 0
+        elif shape == 3:
+            new_shape = 5
+        elif shape == 4:
+            new_shape = 6
+        elif shape == 5:
+            new_shape = 3
+        elif shape == 6:
+            new_shape = 4
+        return new_shape, new_color_indice
 
     def paste_cells(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:

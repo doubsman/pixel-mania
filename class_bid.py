@@ -93,12 +93,12 @@ class BidFile:
             if bool_outline:
                 self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
             else:
-                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))
+                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(255, 255, 255))
             if cell_type == 1:  # carré plein
                 if bool_outline: 
                     self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
                 else:
-                    self.draw.rectangle([(left, top), (right, bottom)], fill=color)
+                    self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=color)
             elif cell_type == 3:  # triangle en bas à droite
                 self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
             elif cell_type == 4:  # triangle en haut à droite
@@ -124,7 +124,7 @@ class BidFile:
             column, row, cell, color_indice = cell
             column -= min_x
             row -= min_y
-            self.draw_cellule(column, row, cell, color_indice, True)
+            self.draw_cellule(column, row, cell, color_indice, False)
         self.draw = backup_draw
         return thumbnail, width/height
 
@@ -137,12 +137,12 @@ class BidFile:
         path_color = self.path_bid.replace('.bid','.color')
         np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
 
-    def save_imagefile(self, path_image, image_scale=50):
+    def save_imagefile(self, path_image, image_scale=50,bool_outline=True):
         if not path_image.endswith(".png"):
             path_image = path_image + '.png'
         backup_result_width = self.result_width
         self.result_width = image_scale * self.grid_width
-        self.draw_bidfile(bool_outline=True)
+        self.draw_bidfile(bool_outline=bool_outline)
         self.image.save(path_image)
         self.result_width = backup_result_width
         self.draw_bidfile()
