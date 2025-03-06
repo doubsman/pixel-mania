@@ -144,7 +144,7 @@ class ImageEditorApp(BidFile):
         self.write_bid()
 
     def saveas_bid(self):
-        if self.bool_backup:
+        if self.bool_backup or self.file_path != '':
             self.file_path = filedialog.asksaveasfilename(title="Save Bid File", filetypes=[("Bid Files", "*.bid")])
             self.write_bid()
     
@@ -509,6 +509,7 @@ class ImageEditorApp(BidFile):
     
     def inverse_cell(self, shape, color_indice):
         new_color_indice = color_indice
+        new_shape = shape
         if shape < 2:
             if color_indice == 0:
                 new_color_indice = 5
