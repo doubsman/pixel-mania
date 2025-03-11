@@ -6,6 +6,7 @@ from class_bid import BidFile
 import numpy as np
 import os
 import subprocess
+from pynput import keyboard
 
 
 class Action:
@@ -50,6 +51,8 @@ class ImageEditorApp(BidFile):
         self.history = []
 
         self.image_over_id = 0
+
+        self.add_selection = False
 
         self.initialize_ui()
 
@@ -112,6 +115,10 @@ class ImageEditorApp(BidFile):
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
         self.root.bind("<Control-z>", self.undo_action)
+
+	    # Collect events until released
+        listener = keyboard.Listener(on_press=self.on_press)
+        listener.start()
 
         # create new bid
         self.create_bid()
@@ -323,6 +330,9 @@ class ImageEditorApp(BidFile):
             self.image_over_id = 0
 
     def select_cellules(self, event):
+        if not self.add_selection:
+            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+            self.canvas.delete("cell_select")
         if self.grid_sel_cells[self.grid_y, self.grid_x] == 1:
             self.grid_sel_cells[self.grid_y, self.grid_x] = 0
             self.canvas.delete(f"cell_select{self.grid_x}_{self.grid_y}")
@@ -641,6 +651,12 @@ class ImageEditorApp(BidFile):
             self.draw_bidfile()
             self.refresh_image()
             self.redraw_thumbnail()
+
+    def on_press(self, key):
+        if key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
+            print("ctrl")
+            self.add_selection = not self.add_selection
+        
 
 if __name__ == "__main__":
     root = ttk.Window(themename="cosmo")

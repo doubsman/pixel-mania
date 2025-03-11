@@ -26,7 +26,6 @@ class BidFile:
         self.result_height = 0
         self.image = None
         self.draw = None
-        self.bid = []
 
     def load_bidfile(self, path_bid, result_width=None):
         if result_width is not None:
@@ -48,6 +47,14 @@ class BidFile:
         self.draw_bidfile()
         return self.image
 
+    def load_combined_file(self, path_combined):
+        data = np.load(path_combined)
+        self.grid_bid = data['grid_bid']
+        self.grid_colors = data['grid_colors']
+        image_array = data['image']
+        self.image = Image.fromarray(image_array)
+        self.draw = ImageDraw.Draw(self.image)
+
     def new_bid(self, result_width=None):
         if result_width is not None:
             self.result_width = result_width
@@ -62,7 +69,6 @@ class BidFile:
         self.image_scale = int(self.result_width / float(self.grid_width))
         self.image = Image.new('RGB', (self.grid_width * self.image_scale, self.grid_height * self.image_scale), color=(255, 255, 255))
         self.draw = ImageDraw.Draw(self.image)
-        self.bid = []
         for row in range(self.grid_height):
             for column in range(self.grid_width):
                 cell = self.grid_bid[row][column]
@@ -75,7 +81,6 @@ class BidFile:
                     # not greys
                     color_indice = 0 if cell == 0 else 5
                     self.grid_colors[row][column] = color_indice
-                self.bid.append((column, row, cell, color_indice))
                 self.draw_cellule(column, row, cell, color_indice, bool_outline)
 
     def draw_cellule(self, x, y, cell_type, cell_color, bool_outline=False):
@@ -93,12 +98,12 @@ class BidFile:
             if bool_outline:
                 self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
             else:
-                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(255, 255, 255))
+                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))
             if cell_type == 1:  # carré plein
                 if bool_outline: 
                     self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=(0, 0, 0))
                 else:
-                    self.draw.rectangle([(left, top), (right, bottom)], fill=color, outline=color)
+                    self.draw.rectangle([(left, top), (right, bottom)], fill=color)
             elif cell_type == 3:  # triangle en bas à droite
                 self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
             elif cell_type == 4:  # triangle en haut à droite
@@ -137,7 +142,7 @@ class BidFile:
         path_color = self.path_bid.replace('.bid','.color')
         np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
 
-    def save_imagefile(self, path_image, image_scale=50,bool_outline=True):
+    def save_imagefile(self, path_image, image_scale=50, bool_outline=True):
         if not path_image.endswith(".png"):
             path_image = path_image + '.png'
         backup_result_width = self.result_width
@@ -147,6 +152,9 @@ class BidFile:
         self.result_width = backup_result_width
         self.draw_bidfile()
 
+    def save_combined_file(self, path_combined):
+        image_array = np.array(self.image)
+        np.savez(path_combined, grid_bid=self.grid_bid, grid_colors=self.grid_colors, image=image_array)
 
 if __name__ == '__main__':
     Myclass = BidFile()
