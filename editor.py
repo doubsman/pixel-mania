@@ -8,6 +8,8 @@ import subprocess
 from pynput.keyboard import Key, Controller, Listener
 from class_bid import BidFile
 from class_cells import Cells
+from class_canvas import ManageCanvas
+from class_action import ActionState
 
 
 class Action:
@@ -17,9 +19,10 @@ class Action:
         self.grid_clipboard = grid_clipboard
         self.grid_sel_cells = grid_sel_cells
 
-class ImageEditorApp(BidFile):
+class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def __init__(self, root):
         BidFile.__init__(self)
+        ActionState.__init__(self)
         self.root = root
         self.tittle = "Image Bid Editor"
         self.root.title(self.tittle)
@@ -50,9 +53,7 @@ class ImageEditorApp(BidFile):
         self.selection_rect = None
         # mode selection ADD +
         self.bool_mode_add_selection = False
-        # Array Cancel        
-        self.history = []
-        # mode Past Cells
+         # mode Past Cells
         self.paste_mode = False
         # Pasted Image ID
         self.image_over_id = 0
@@ -122,7 +123,7 @@ class ImageEditorApp(BidFile):
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='lightblue')
         self.outercanvas.pack(expand="y", fill="y")
-        self.canvas = ttk.Canvas(self.outercanvas, width=self.WIDTH, height=self.HEIGHT, border=2)
+        self.canvas = ttk.Canvas(self.outercanvas, width=self.WIDTH, height=self.HEIGHT, border=2, relief="sunken")
         self.outercanvas.create_window(50, 50, window=self.canvas, anchor=ttk.NW)
 
         self.canvas.bind("<Motion>", self.update_coords_cells)
@@ -130,25 +131,6 @@ class ImageEditorApp(BidFile):
 
         # create new bid
         self.create_bid()
-
-    def center_image_on_canvas(self, canvas, image):
-        canvas_width = canvas.winfo_width()
-        canvas_height = canvas.winfo_height()
-        image_width, image_height = image.size
-        tk_image = ImageTk.PhotoImage(image)
-        x_center = (canvas_width - image_width) // 2
-        y_center = (canvas_height - image_height) // 2
-        canvas.create_image(x_center, y_center, anchor=ttk.NW, image=tk_image)
-        canvas.image = tk_image
-
-    def center_canvas_on_canvas(self, parent_canvas, child_canvas):
-        parent_width = parent_canvas.winfo_width()
-        parent_height = parent_canvas.winfo_height()
-        child_width = child_canvas.winfo_width()
-        child_height = child_canvas.winfo_height()
-        x_center = (parent_width - child_width) // 2
-        y_center = (parent_height - child_height) // 2
-        parent_canvas.create_window(x_center, y_center, window=child_canvas, anchor=ttk.NW)
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=image_path).subsample(subsample, subsample)
@@ -163,15 +145,17 @@ class ImageEditorApp(BidFile):
             self.file_path = bid_path
             self.root.title(f'{self.tittle} [{self.file_path}]')  
             self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
-            self.clipboard.symbol_image_scale = self.image_scale
-            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-            self.refresh_image()
-            self.mode_draw()
+            self.init_bid()
 
     def create_bid(self):
         self.root.title(f'{self.tittle} : [NEW]')
         self.file_path = ''
         self.new_bid(self.WIDTH, self.HEIGHT)
+        self.init_bid()
+    
+    def init_bid(self):
+        self.WIDTH, self.HEIGHT = self.image.size
+        self.canvas.config(width=self.WIDTH, height=self.HEIGHT)
         self.clipboard.symbol_image_scale = self.image_scale
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.refresh_image()
@@ -255,12 +239,8 @@ class ImageEditorApp(BidFile):
 
         if self.paste_mode and len(self.grid_clipboard) > 0 :
             # Determine the position to paste the cells
-            min_x = min([cell[0] for cell in self.grid_clipboard])
-            min_y = min([cell[1] for cell in self.grid_clipboard])
-            max_x = max([cell[0] for cell in self.grid_clipboard])
-            max_y = max([cell[1] for cell in self.grid_clipboard])
-            grid_clipboard_x = int((max_x - min_x)/2)
-            grid_clipboard_y = int((max_y - min_y)/2)
+            grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
+            grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
             x1 = (self.grid_x - grid_clipboard_x) * self.image_scale
             y1 = (self.grid_y - grid_clipboard_y) * self.image_scale
             overview_tk = ImageTk.PhotoImage(self.clipboard.symbol_image)
@@ -440,7 +420,8 @@ class ImageEditorApp(BidFile):
                         self.draw_cell(x, y, 0, 0)
                         self.grid_bid[y, x] = 0
                         self.grid_colors[y, x] = 0
-        if cut:                        
+        if cut:
+            self.save_state()                      
             self.refresh_image()
 
         if not self.bool_mode_add_selection:
@@ -462,21 +443,13 @@ class ImageEditorApp(BidFile):
         if self.paste_mode:
             self.save_state()
             self.bool_backup = True
-            clipboard_cells = self.grid_clipboard
-            grid_x = self.grid_x
-            grid_y = self.grid_y
             
-            min_x = min([cell[0] for cell in clipboard_cells])
-            min_y = min([cell[1] for cell in clipboard_cells])
-            max_x = max([cell[0] for cell in self.grid_clipboard])
-            max_y = max([cell[1] for cell in self.grid_clipboard])
-            grid_clipboard_x = int((max_x - min_x)/2)
-            grid_clipboard_y = int((max_y - min_y)/2)
-
-            for cell in clipboard_cells:
+            grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
+            grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
+            for cell in self.grid_clipboard:
                 x, y, shape, color = cell
-                new_x = grid_x + (x - min_x) - grid_clipboard_x
-                new_y = grid_y + (y - min_y) - grid_clipboard_y
+                new_x = self.grid_x + (x - self.clipboard.min_x) - grid_clipboard_x
+                new_y = self.grid_y + (y - self.clipboard.min_y) - grid_clipboard_y
                 if 0 <= new_x < self.grid_width and 0 <= new_y < self.grid_height:
                     self.grid_bid[new_y][new_x] = shape
                     self.grid_colors[new_y][new_x] = color
@@ -549,19 +522,11 @@ class ImageEditorApp(BidFile):
         self.restore_state()
 
     def save_state(self):
-        """Sauvegarde l'état actuel dans l'historique."""
-        action = Action(
-            np.copy(self.grid_bid),
-            np.copy(self.grid_colors),
-            np.copy(self.grid_clipboard),
-            np.copy(self.grid_sel_cells)
-        )
-        self.history.append(action)
+        self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
 
     def restore_state(self):
-        """Restaure l'état précédent à partir de l'historique."""
         if self.history:
-            action = self.history.pop()
+            action = self.restore_actionstate()
             self.grid_bid = action.grid_bid
             self.grid_colors = action.grid_colors
             self.grid_clipboard = action.grid_clipboard

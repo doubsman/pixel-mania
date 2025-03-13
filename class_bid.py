@@ -79,11 +79,14 @@ class BidFile(Cells):
     def save_imagefile(self, path_image, image_scale=50, bool_outline=True):
         if not path_image.endswith(".png"):
             path_image = path_image + '.png'
-        backup_result_width = self.result_width
-        self.result_width = image_scale * self.grid_width
+        backup_scale = self.image_scale
+        backup_symbol_scale =  self.symbol_image_scale
+        self.image_scale = image_scale
+        self.symbol_image_scale = image_scale
         self.draw_bidfile(bool_outline=bool_outline)
         self.image.save(path_image)
-        self.result_width = backup_result_width
+        self.image_scale = backup_scale
+        self.symbol_image_scale = backup_symbol_scale
         self.draw_bidfile()
 
     def load_combined_file(self, path_combined):
