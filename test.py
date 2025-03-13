@@ -1,18 +1,15 @@
 from tkinter import *
 
-def mouse(event=None):
-    x = win.winfo_pointerx()
-    y = win.winfo_pointery()
-    canvas.create_oval(x-10,y-10,x+10,y+10,fill='red')
-    win.after(10,mouse)
+window = Tk()
+# window.geometry("1000x500") #Width x Height
 
-win = Tk()
-win.overrideredirect(True)
-win.state("zoomed")
-win.lift()
-win.wm_attributes("-topmost", True)
-win.wm_attributes("-transparentcolor", "white")
-canvas = Canvas(win,bg='white')
-canvas.pack(side=TOP, expand=True, fill=BOTH)
-mouse()
-win.mainloop()
+logo = PhotoImage(file="xxx")
+Label (window, image=logo, bg="#f0f0f0") .grid(row=0, column=0)
+
+T = Text(window, height=2, width=30)
+T.insert(END, "Just a text Widget\nin two lines\n")
+T.grid(row=1, column=0, sticky=S)
+
+window.grid_rowconfigure(1,weight=1)
+
+window.mainloop()

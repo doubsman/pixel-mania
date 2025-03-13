@@ -31,43 +31,33 @@ class Cells:
         self.symbol_width = (self.max_x - self.min_x + 1)
         self.symbol_height = (self.max_y - self.min_y + 1)
     
-    def define_scale(self, image_with, image_height):
-        if image_with > image_height:
-            self.symbol_image_scale = int(image_with / float(self.symbol_width))
+    def define_scale(self, image_with, image_height, grid_width, grid_height):
+        if image_with >= image_height:
+            image_scale = int(image_with / float(grid_width))
         else:
-            self.symbol_image_scale = int(image_height / float(self.symbol_height))
+            image_scale = int(image_height / float(grid_height))
+        return image_scale
     
-    def insert_symbol(self, array_symbol=None, image_with=None, image_height=None):
+    def insert_symbol(self, array_symbol, image_with=None, image_height=None):
         self.symbol_path = None
         self.symbol = array_symbol
-        # modify scale function desired width or height
-        if image_with is not None and image_height is not None:
-            self.define_scale()
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
-            self.define_dimension()
-            self.draw_symbol()
+            # modify scale function desired width or height
+            if image_with is not None and image_height is not None:
+                self.symbol_image_scale = self.define_scale(image_with, image_height)
+            self.draw_cells()
+
 
     def load_symbol(self, symbol_path):
         if os.path.isfile(symbol_path):
             self.symbol_path = symbol_path
             self.symbol = np.loadtxt(self.symbol_path, dtype=int, delimiter=";")
-            self.define_dimension()           
-            self.draw_symbol()  
+            self.draw_cells()
+        return self.symbol
 
     def save_symbol(self, symbol_path):
         np.savetxt(symbol_path, self.symbol, fmt='%i', delimiter=";")
 
-    def draw_symbol(self):
-        width = (self.symbol_width) * self.symbol_image_scale
-        height = (self.symbol_height) * self.symbol_image_scale
-        self.symbol_image = Image.new('RGB', (width, height), (255, 255, 255))
-        self.draw = ImageDraw.Draw(self.symbol_image)
-        for cell in self.symbol:
-            column, row, cell, color_indice = cell
-            column -= self.min_x
-            row -= self.min_y
-            self.draw_cell(column, row, cell, color_indice)
-    
     def draw_cell(self, x, y, cell_type, cell_color, bool_outline=False):
         """Draw a cell according to its type."""
         left = x * self.symbol_image_scale
@@ -98,6 +88,38 @@ class Cells:
             elif cell_type == 6:  # triangle en bas à gauche
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
+    def draw_cells(self):
+        self.define_dimension()
+        width = (self.symbol_width) * self.symbol_image_scale
+        height = (self.symbol_height) * self.symbol_image_scale
+        self.symbol_image = Image.new('RGB', (width, height), (255, 255, 255))
+        self.draw = ImageDraw.Draw(self.symbol_image)
+        for cell in self.symbol:
+            column, row, cell, color_indice = cell
+            column -= self.min_x
+            row -= self.min_y
+            self.draw_cell(column, row, cell, color_indice)
+
+    def draw_part_cells(self, cells):  #cell(column, row, cell, color_indice)
+        min_x = min([cell[0] for cell in cells])
+        min_y = min([cell[1] for cell in cells])
+        max_x = max([cell[0] for cell in cells])
+        max_y = max([cell[1] for cell in cells])
+
+        width = (max_x - min_x + 1) * self.image_scale
+        height = (max_y - min_y + 1) * self.image_scale
+
+        backup_draw = self.draw
+        thumbnail = Image.new('RGB', (width, height), (255, 255, 255))
+        self.draw = ImageDraw.Draw(thumbnail)
+        for cell in cells:
+            column, row, cell, color_indice = cell
+            column -= min_x
+            row -= min_y
+            self.draw_cell(column, row, cell, color_indice, False)
+        self.draw = backup_draw
+        return thumbnail, width/height
+
     def flipv_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
             max_y = max(cell[1] for cell in self.symbol)
@@ -119,7 +141,8 @@ class Cells:
                     new_shape = shape
                 flips.append((x, new_y, new_shape, color))
             self.symbol = flips
-            self.draw_symbol()
+            self.draw_cells()
+            return self.symbol
 
     def fliph_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
@@ -142,7 +165,8 @@ class Cells:
                     new_shape = shape
                 flips.append((new_x, y, new_shape, color))
             self.symbol = flips
-            self.draw_symbol()
+            self.draw_cells()
+            return self.symbol
 
     def rotate_l_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
@@ -167,8 +191,8 @@ class Cells:
                     new_shape = shape
                 rotate.append((new_x, new_y, new_shape, color))
             self.symbol = rotate
-            self.define_dimension()
-            self.draw_symbol()
+            self.draw_cells()
+            return self.symbol
 
     def rotate_r_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
@@ -193,8 +217,8 @@ class Cells:
                     new_shape = shape
                 rotate.append((new_x, new_y, new_shape, color))
             self.symbol = rotate
-            self.define_dimension()
-            self.draw_symbol()
+            self.draw_cells()
+            return self.symbol
 
     def inverse_colors(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
@@ -204,7 +228,8 @@ class Cells:
                 inv_shape, inv_color_indice = self.inverse_cell(shape, color_indice)
                 invert_cells.append((column, row, inv_shape, inv_color_indice))
             self.symbol = invert_cells
-            self.draw_symbol()
+            self.draw_cells()
+            return self.symbol
 
     def inverse_cell(self, shape, color_indice):
         new_color_indice = color_indice
