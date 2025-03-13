@@ -362,6 +362,8 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.magic_select_cellules)
         self.paste_mode = False
+        self.bool_mode_add_selection = False
+        self.controler.press(Key.ctrl_l)
         if self.image_over_id != 0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -429,6 +431,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         else: 
             self.grid_clipboard += selected_cells
         self.clipboard.insert_symbol(self.grid_clipboard)
+        self.symbol_image_scale = self.image_scale
         self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)

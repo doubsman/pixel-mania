@@ -100,26 +100,6 @@ class Cells:
             row -= self.min_y
             self.draw_cell(column, row, cell, color_indice)
 
-    def draw_part_cells(self, cells):  #cell(column, row, cell, color_indice)
-        min_x = min([cell[0] for cell in cells])
-        min_y = min([cell[1] for cell in cells])
-        max_x = max([cell[0] for cell in cells])
-        max_y = max([cell[1] for cell in cells])
-
-        width = (max_x - min_x + 1) * self.image_scale
-        height = (max_y - min_y + 1) * self.image_scale
-
-        backup_draw = self.draw
-        thumbnail = Image.new('RGB', (width, height), (255, 255, 255))
-        self.draw = ImageDraw.Draw(thumbnail)
-        for cell in cells:
-            column, row, cell, color_indice = cell
-            column -= min_x
-            row -= min_y
-            self.draw_cell(column, row, cell, color_indice, False)
-        self.draw = backup_draw
-        return thumbnail, width/height
-
     def flipv_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
             max_y = max(cell[1] for cell in self.symbol)
