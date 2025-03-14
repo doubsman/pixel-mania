@@ -12,13 +12,6 @@ from class_canvas import ManageCanvas
 from class_action import ActionState
 
 
-class Action:
-    def __init__(self, grid_bid, grid_colors, grid_clipboard, grid_sel_cells):
-        self.grid_bid = grid_bid
-        self.grid_colors = grid_colors
-        self.grid_clipboard = grid_clipboard
-        self.grid_sel_cells = grid_sel_cells
-
 class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def __init__(self, root):
         BidFile.__init__(self)
@@ -32,34 +25,34 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.WIDTH = 1700-200-100
         self.HEIGHT = 1520-20-100
         self.file_path = ""
-        #mode Grill Canvas
+        # Mode Grill Canvas
         self.bool_grid = True
-        # backup BID necessary
+        # Backup BID necessary
         self.bool_backup = False
         # Selection
         self.grid_sel_cells = []
-        # clipboard
+        # Clipboard
         self.grid_clipboard = []
         self.clipboard = Cells()
         # (x,y) Curent position cursor
         self.grid_x = 1
         self.grid_y = 1
-        #Selection palette
+        # Selection palette
         self.current_select_shape = 0
         self.current_select_color = 0
-        # mode selection Area 
+        # Mode selection Area 
         self.selection_start = None
         self.selection_end = None
         self.selection_rect = None
-        # mode selection ADD +
+        # Mode selection ADD +
         self.bool_mode_add_selection = False
-         # mode Past Cells
-        self.paste_mode = False
+        # Mode Past Cells
+        self.bool_paste_mode = False
         # Pasted Image ID
         self.image_over_id = 0
 	    # Collect events until released
-        self.listener = Listener(on_press=self.on_press)
-        self.listener.start()
+        listener = Listener(on_press=self.on_press)
+        listener.start()
         self.controler = Controller()
         
         self.initialize_ui()
@@ -156,7 +149,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def init_bid(self):
         self.WIDTH, self.HEIGHT = self.image.size
         self.canvas.config(width=self.WIDTH, height=self.HEIGHT)
-        self.clipboard.symbol_image_scale = self.image_scale
+        self.clipboard.image_scale = self.image_scale
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.refresh_image()
         self.mode_draw()
@@ -221,7 +214,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         elif grid_y > 5:
             self.current_select_shape = grid_y - 3
             self.current_select_color = 5
-        self.paste_mode = False
+        self.bool_paste_mode = False
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -237,7 +230,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             self.grid_x = self.grid_width-1
         self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
 
-        if self.paste_mode and len(self.grid_clipboard) > 0 :
+        if self.bool_paste_mode and len(self.grid_clipboard) > 0 :
             # Determine the position to paste the cells
             grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
             grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
@@ -266,7 +259,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             self.center_image_on_canvas(self.thumbnail_canvas, thumbnail)
 
     def mode_draw(self):
-        self.paste_mode = False
+        self.bool_paste_mode = False
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -284,7 +277,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.refresh_image()
 
     def mode_area(self):
-        self.paste_mode = False
+        self.bool_paste_mode = False
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -296,7 +289,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def start_selection(self, event):
         if not self.bool_mode_add_selection:
             self.canvas.delete(f"cell_select")
-        self.paste_mode = False
+        self.bool_paste_mode = False
         self.selection_start = (event.x, event.y)
         self.selection_end = (event.x, event.y)
         self.selection_rect = self.canvas.create_rectangle(
@@ -336,7 +329,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.select_cellules)
-        self.paste_mode = False
+        self.bool_paste_mode = False
         self.bool_mode_add_selection = False
         self.controler.press(Key.ctrl_l)
         if self.image_over_id !=0:
@@ -361,7 +354,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.magic_select_cellules)
-        self.paste_mode = False
+        self.bool_paste_mode = False
         self.bool_mode_add_selection = False
         self.controler.press(Key.ctrl_l)
         if self.image_over_id != 0:
@@ -431,7 +424,6 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         else: 
             self.grid_clipboard += selected_cells
         self.clipboard.insert_symbol(self.grid_clipboard)
-        self.symbol_image_scale = self.image_scale
         self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
@@ -439,11 +431,14 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def paste_cells(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             # mode Past Activate
-            self.paste_mode = True  
+            self.bool_paste_mode = True  
+            self.canvas.unbind("<ButtonPress-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
             self.canvas.bind("<Button-1>", self.paste_cells_on_canvas)
 
     def paste_cells_on_canvas(self, event):
-        if self.paste_mode:
+        if self.bool_paste_mode:
             self.save_state()
             self.bool_backup = True
             
@@ -528,8 +523,8 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
 
     def restore_state(self):
-        if self.history:
-            action = self.restore_actionstate()
+        action = self.restore_actionstate()
+        if action is not None:
             self.grid_bid = action.grid_bid
             self.grid_colors = action.grid_colors
             self.grid_clipboard = action.grid_clipboard

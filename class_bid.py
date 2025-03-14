@@ -14,7 +14,6 @@ class BidFile(Cells):
         self.bool_color = True
         self.grid_width = 0
         self.grid_height = 0
-        self.image_scale = 50
         self.image = None
         self.draw = None
 
@@ -24,8 +23,7 @@ class BidFile(Cells):
         self.grid_width = len(self.grid_bid[0])
         self.grid_height = int(self.grid_bid.size / self.grid_width)
         if image_with is not None and image_height is not None:
-            self.image_scale = self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
-            self.symbol_image_scale = self.image_scale
+            self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
         # colors
         self.path_color = self.path_bid.replace('.bid','.color')
         self.bool_color = os.path.isfile(self.path_color)
@@ -43,7 +41,7 @@ class BidFile(Cells):
         self.grid_height = grid_height
         self.grid_width = grid_width
         if image_with is not None and image_height is not None:
-            self.image_scale = self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
+            self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
         self.grid_bid = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
         self.draw_bidfile()
@@ -64,7 +62,6 @@ class BidFile(Cells):
                     # not greys
                     color_indice = 0 if cell == 0 else 5
                     self.grid_colors[row][column] = color_indice
-                #self.symbol_image_scale = self.image_scale
                 self.draw_cell(column, row, cell, color_indice, bool_outline)
 
     def save_bidfile(self, path_bid):

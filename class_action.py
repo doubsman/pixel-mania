@@ -23,5 +23,8 @@ class ActionState():
         self.history.append(action)
     
     def restore_actionstate(self):
-        return self.history.pop()
+        if self.history:
+            return self.history.pop()
+        else:
+            return None
             

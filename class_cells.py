@@ -18,7 +18,7 @@ class Cells:
         self.symbol_path = None
         self.symbol_width = 0
         self.symbol_height = 0
-        self.symbol_image_scale = 20
+        self.image_scale = 20
         self.symbol_image = None
         self.draw = None
         self.min_x = self.min_y = self.max_x = self.max_y = 0
@@ -33,25 +33,22 @@ class Cells:
     
     def define_scale(self, image_with, image_height, grid_width, grid_height):
         if image_with >= image_height:
-            image_scale = int(image_with / float(grid_width))
+            self.image_scale = int(image_with / float(grid_width))
         else:
-            image_scale = int(image_height / float(grid_height))
-        return image_scale
+            self.image_scale = int(image_height / float(grid_height))
     
-    def insert_symbol(self, array_symbol, image_with=None, image_height=None):
+    def insert_symbol(self, array_symbol):
         self.symbol_path = None
         self.symbol = array_symbol
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
-            # modify scale function desired width or height
-            if image_with is not None and image_height is not None:
-                self.symbol_image_scale = self.define_scale(image_with, image_height)
+            self.define_dimension()
             self.draw_cells()
-
 
     def load_symbol(self, symbol_path):
         if os.path.isfile(symbol_path):
             self.symbol_path = symbol_path
             self.symbol = np.loadtxt(self.symbol_path, dtype=int, delimiter=";")
+            self.define_dimension()
             self.draw_cells()
         return self.symbol
 
@@ -60,13 +57,13 @@ class Cells:
 
     def draw_cell(self, x, y, cell_type, cell_color, bool_outline=False):
         """Draw a cell according to its type."""
-        left = x * self.symbol_image_scale
-        top = y * self.symbol_image_scale
-        right = (x + 1) * self.symbol_image_scale
-        bottom = (y + 1) * self.symbol_image_scale
+        left = x * self.image_scale
+        top = y * self.image_scale
+        right = (x + 1) * self.image_scale
+        bottom = (y + 1) * self.image_scale
         color = GRAY_SCALE_DRAW[cell_color]
 
-        if self.symbol_image_scale == 1:
+        if self.image_scale == 1:
             # 1 cellule = 1 pixel
             self.draw.point((x, y), fill=color)
         else:
@@ -89,9 +86,8 @@ class Cells:
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
 
     def draw_cells(self):
-        self.define_dimension()
-        width = (self.symbol_width) * self.symbol_image_scale
-        height = (self.symbol_height) * self.symbol_image_scale
+        width = (self.symbol_width) * self.image_scale
+        height = (self.symbol_height) * self.image_scale
         self.symbol_image = Image.new('RGB', (width, height), (255, 255, 255))
         self.draw = ImageDraw.Draw(self.symbol_image)
         for cell in self.symbol:
