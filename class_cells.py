@@ -32,9 +32,12 @@ class Cells:
         self.symbol_height = (self.max_y - self.min_y + 1)
     
     def define_scale(self, image_with, image_height, grid_width, grid_height):
+        print(image_with, image_height)
         if image_with >= image_height:
+            print('w',self.image_scale)
             self.image_scale = int(image_with / float(grid_width))
         else:
+            print('h',self.image_scale)
             self.image_scale = int(image_height / float(grid_height))
     
     def insert_symbol(self, array_symbol):

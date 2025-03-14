@@ -244,6 +244,13 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         image = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor="nw", image=image)
         self.canvas.image = image
+        # Draw selected cells        
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                if self.grid_sel_cells[y, x] == 1:
+                    x1, y1 = (x * self.image_scale), (y * self.image_scale)
+                    x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
         if self.bool_grid:
             self.bool_grid = False
             self.draw_grid()
