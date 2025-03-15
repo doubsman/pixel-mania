@@ -35,10 +35,8 @@ class Cells:
         image_grid_width = grid_width * self.image_scale
         image_grid_height = grid_height * self.image_scale
         if image_grid_width >= image_grid_height:
-            print('w',self.image_scale)
             self.image_scale = int(image_with / float(grid_width))
         else:
-            print('h',self.image_scale)
             self.image_scale = int(image_height / float(grid_height))
     
     def insert_symbol(self, array_symbol):

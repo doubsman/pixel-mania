@@ -37,6 +37,9 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         # (x,y) Curent position cursor
         self.grid_x = 1
         self.grid_y = 1
+        # UI option
+        self.grid_width_option = ttk.IntVar(value=0)
+        self.grid_height_option = ttk.IntVar(value=0)
         # Selection palette
         self.current_select_shape = 0
         self.current_select_color = 0
@@ -70,6 +73,13 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         left_frame2 = ttk.Frame(self.root)
         left_frame2['borderwidth'] = 5
         left_frame2.pack(side="left", fill="y")
+
+        self.grid_width_label = ttk.Label(left_frame, text="Width:")
+        self.grid_width_label.pack()
+        ttk.Scale(left_frame, from_=5, to=96, orient=ttk.HORIZONTAL, variable=self.grid_width_option, command=self.update_grid, length=70).pack()
+        self.grid_height_label = ttk.Label(left_frame2, text="Height:")
+        self.grid_height_label.pack()
+        ttk.Scale(left_frame2, from_=5, to=96, orient=ttk.HORIZONTAL, variable=self.grid_height_option, command=self.update_grid, length=70).pack()
 
         open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
         new_button = self.create_button(left_frame2, 'ico/plus.png', self.create_bid, "New")
@@ -147,11 +157,16 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.init_bid()
     
     def init_bid(self):
-        self.WIDTH, self.HEIGHT = self.image.size
-        self.canvas.config(width=self.WIDTH, height=self.HEIGHT)
+        witdth, height = self.image.size
+        self.canvas.config(width=witdth, height=height)
         self.clipboard.image_scale = self.image_scale
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_width_label.config(text=f"Width :{self.grid_width}")
+        self.grid_height_label.config(text=f"Height :{self.grid_height}")
+        self.grid_width_option.set(self.grid_width)
+        self.grid_height_option.set(self.grid_height)
         self.refresh_image()
+        self.center_canvas_on_canvas(self.outercanvas,self.canvas)
         self.mode_draw()
 
     def save_bid(self):
@@ -220,6 +235,28 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             self.image_over_id = 0
         self.mode_draw()
 
+    def update_grid(self, event=None):
+        w = int(self.grid_width_option.get())
+        h = int(self.grid_height_option.get())
+        if h % 2 != 0:
+            h += 1
+            self.grid_height_option.set(h)
+        if w % 2 != 0:
+            w += 1
+            self.grid_width_option.set(w)
+        self.grid_width_label.config(text=f"Width :{w}")
+        self.grid_height_label.config(text=f"Height :{h}")
+        if self.file_path == '':
+            self.new_bid(self.WIDTH, self.HEIGHT,w ,h)
+            self.init_bid()
+        else:
+            # Not Reduce bid file
+            self.change_dimension(w, h)
+            self.init_bid()
+        self.grid_width_label.config(text=f"Width :{w}")
+        self.grid_height_label.config(text=f"Height :{h}")
+            
+
     def update_coords_cells(self, event):
         # Update position grid
         self.grid_x = int(event.x / self.image_scale) 
@@ -241,9 +278,8 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             self.canvas.image_sur = overview_tk
 
     def refresh_image(self):
-        image = ImageTk.PhotoImage(self.image)
-        self.canvas.create_image(0, 0, anchor="nw", image=image)
-        self.canvas.image = image
+        #self.center_canvas_on_canvas(self.outercanvas,self.canvas)
+        self.center_image_on_canvas(self.canvas, self.image)
         # Draw selected cells     
         for y in range(self.grid_height):
             for x in range(self.grid_width):
@@ -515,9 +551,9 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             width_image = self.grid_width * self.image_scale
             height_image = self.grid_height * self.image_scale
             for line in range(0, width_image, self.image_scale):
-                self.canvas.create_line([(line, 0), (line , height_image)], fill='grey', dash=(1,1), tags='grid_line_w')
+                self.canvas.create_line([(line+1, 0), (line+1, height_image)], fill='grey', dash=(1,1), tags='grid_line_w')
             for line in range(0, height_image, self.image_scale):
-                self.canvas.create_line([(0, line), (width_image, line)], fill='grey', dash=(1,1), tags='grid_line_h')
+                self.canvas.create_line([(0, line+1), (width_image, line+1)], fill='grey', dash=(1,1), tags='grid_line_h')
             self.bool_grid = True
         else:
             self.canvas.delete('grid_line_w')

@@ -47,6 +47,32 @@ class BidFile(Cells):
         self.draw_bidfile()
         return self.image
 
+    def change_dimension(self, grid_width, grid_height):
+        if grid_width < self.grid_width or grid_height < self.grid_height:
+            self.reduce_grid(grid_width, grid_height)
+        if grid_width > self.grid_width or grid_height > self.grid_height:
+            self.extend_grid(grid_width, grid_height)
+        self.grid_height = grid_height
+        self.grid_width = grid_width
+        self.draw_bidfile()
+
+    def extend_grid(self, rows, columns):
+        extend_rows = int((rows-self.grid_height)/2)+1
+        extend_columns = int((columns-self.grid_width)/2)+1
+        print(rows, columns, extend_rows, extend_columns)
+        extend_array = np.pad(self.grid_bid, ((extend_rows, extend_rows), (extend_columns, extend_columns)), mode='constant', constant_values=0)
+        self.grid_bid = extend_array
+        extend_array = np.pad(self.grid_colors, ((extend_rows, extend_rows), (extend_columns, extend_columns)), mode='constant', constant_values=0)
+        self.grid_colors = extend_array
+
+    def reduce_grid(self, rows, columns):
+        start_row = rows
+        end_row = self.grid_bid.shape[0] - rows
+        start_col = columns
+        end_col = self.grid_bid.shape[1] - columns
+        reduced_array = self.grid_bid[start_row:end_row, start_col:end_col]
+        self.grid_bid = reduced_array
+
     def draw_bidfile(self, bool_outline=False):
         self.image = Image.new('RGB', (self.grid_width * self.image_scale, self.grid_height * self.image_scale), color=(255, 255, 255))
         self.draw = ImageDraw.Draw(self.image)

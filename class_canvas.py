@@ -20,6 +20,7 @@ class ManageCanvas():
         parent_height = parent_canvas.winfo_height()
         child_width = child_canvas.winfo_width()
         child_height = child_canvas.winfo_height()
-        x_center = (parent_width - child_width) // 2
-        y_center = (parent_height - child_height) // 2
-        parent_canvas.create_window(x_center, y_center, window=child_canvas, anchor=ttk.NW)
+        if parent_width != 1 and parent_height !=1:
+            x_center = (parent_width - child_width) // 2
+            y_center = (parent_height - child_height) // 2
+            parent_canvas.create_window(x_center, y_center, window=child_canvas, anchor=ttk.NW)
