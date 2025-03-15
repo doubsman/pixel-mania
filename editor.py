@@ -244,7 +244,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         image = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor="nw", image=image)
         self.canvas.image = image
-        # Draw selected cells        
+        # Draw selected cells     
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 if self.grid_sel_cells[y, x] == 1:
@@ -270,6 +270,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
+        #self.canvas.delete(f"cell_select")
         self.canvas.unbind("<ButtonPress-1>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.unbind("<B1-Motion>")

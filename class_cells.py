@@ -32,8 +32,9 @@ class Cells:
         self.symbol_height = (self.max_y - self.min_y + 1)
     
     def define_scale(self, image_with, image_height, grid_width, grid_height):
-        print(image_with, image_height)
-        if image_with >= image_height:
+        image_grid_width = grid_width * self.image_scale
+        image_grid_height = grid_height * self.image_scale
+        if image_grid_width >= image_grid_height:
             print('w',self.image_scale)
             self.image_scale = int(image_with / float(grid_width))
         else:
