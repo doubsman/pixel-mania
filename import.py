@@ -102,8 +102,9 @@ class ImageProcessorApp:
                     model_ascii=self.model_ascii.get()
                 )
                 self.class_BidFile.image_scale = 20
-                image, ratio = self.class_BidFile.draw_part_cells(cells_bid)
-                image = ImageTk.PhotoImage(image)
+                self.class_BidFile.grid_bid = cells_bid
+                self.class_BidFile.draw_cells()
+                image = ImageTk.PhotoImage(self.class_BidFile.image)
                 self.canvas.create_image(0, 0, anchor="nw", image=image)
                 self.canvas.image = image
             except Exception as e:

@@ -21,11 +21,12 @@ CHARTS_ASCII = {
 
 class ImageASCII():
     def __init__(self, image, grid_width=1, grid_height=1, width_cellule=2, scale=1):
+        self.display_result = ''
         width, height = image.size
         if scale != 1:
             width = int(width * scale)
             height = int(height * scale)
-            image = image.resize((width, height), Image.Resampling.LANCZOS)
+            image = image.resize((width, height), Image.Resampling.BILINEAR)
         
         cell_width = int(width / grid_width)
         cell_height = int(height / grid_height)
@@ -39,7 +40,7 @@ class ImageASCII():
                 bottom = (row + 1) * cell_height
                 cell = image.crop((left, top, right, bottom))
                 self.decode_image_ascii(cell, out_lines, width_cellule)
-            print('\n'.join(out_lines))
+            self.display_result += '\n'.join(out_lines)
 
     def decode_image_ascii(self, image, out_lines, width_cellule=2):
         image = image.convert("RGB")
@@ -77,7 +78,7 @@ class BidASCII():
         grid_ascii = np.empty(height, dtype=object)
         
         output_lines = []
-        print('┌' + '─' * (2 + width*width_cellule) + '┐')
+        self.display_result = '┌' + '─' * (2 + width*width_cellule) + '┐'
         for row in range(height):
             backup_line = ''
             display_line = ''
@@ -95,10 +96,10 @@ class BidASCII():
                 backup_line += CHARTS_ASCII[1][carac]
                 display_line += color_ascii + carac_ascii
             display_line += "\033[0m"
-            print(f'│ {display_line} │')
+            self.display_result += f'\n│ {display_line} │'
             output_lines.append(backup_line)
             grid_ascii[row] = backup_line
-        print('└' + '─' * (2 + width*width_cellule) + '┘')
+        self.display_result += '\n└' + '─' * (2 + width*width_cellule) + '┘'
 
         if path_ascii is not None:
             filename_ascii = os.path.splitext(os.path.basename(path_ascii))[0] + '.ascii'
