@@ -11,7 +11,47 @@ from class_cells import Cells
 from class_action import ActionState
 from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
+import sys
+import logging
 
+# Configuration du logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+        
+        # Si le chemin contient déjà 'ico', ne pas l'ajouter à nouveau
+        if relative_path.startswith(('ico/', 'ico\\')):
+            full_path = os.path.join(base_path, relative_path)
+        else:
+            full_path = os.path.join(base_path, relative_path)
+        
+        logger.debug(f"Resource path requested: {relative_path}")
+        logger.debug(f"Base path: {base_path}")
+        logger.debug(f"Full path: {full_path}")
+        
+        # Vérifier si le fichier existe
+        if not os.path.exists(full_path):
+            logger.error(f"Resource not found: {full_path}")
+            # Essayer de trouver le fichier dans le dossier courant
+            alt_path = os.path.join(os.getcwd(), relative_path)
+            if os.path.exists(alt_path):
+                logger.debug(f"Resource found in current directory: {alt_path}")
+                return alt_path
+            # Lister les fichiers disponibles dans le dossier base
+            logger.debug(f"Files in {base_path}:")
+            for root, dirs, files in os.walk(base_path):
+                for item in dirs + files:
+                    logger.debug(f"  {os.path.join(root, item)}")
+        
+        return full_path
+    except Exception as e:
+        logger.error(f"Error in resource_path: {str(e)}")
+        return relative_path
 
 class ImageEditorApp(BidFile, ActionState):
     def __init__(self, root):
@@ -61,11 +101,23 @@ class ImageEditorApp(BidFile, ActionState):
         listener.start()
         self.controler = Controller()
         
+        # Logging de l'environnement
+        logger.debug(f"Python executable: {sys.executable}")
+        logger.debug(f"Current working directory: {os.getcwd()}")
+        logger.debug(f"MEIPASS: {getattr(sys, '_MEIPASS', 'Not running in PyInstaller')}")
+        
+        # Vérifier que le dossier ico existe
+        ico_path = resource_path('ico')
+        if not os.path.exists(ico_path):
+            print(f"Warning: ico directory not found at {ico_path}")
+            print(f"Current directory: {os.getcwd()}")
+            print(f"Available files: {os.listdir('.')}")
+        
         self.initialize_ui()
 
     def initialize_ui(self):
         # Set the window icon
-        icon = ImageTk.PhotoImage(file='ico/carre.png')
+        icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
         self.root.iconphoto(False, icon)
 
         # The left frame to contain the 4 buttons
@@ -103,7 +155,8 @@ class ImageEditorApp(BidFile, ActionState):
         fill_button = self.create_button(left_frame, 'ico/fill.png', self.fill_cells, "Grid")
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid")
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
-        ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_image, "Save Image")
+        ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save Image")
+        imageascii_button = self.create_button(left_frame, 'ico/terminal.png', self.display_console_image, "Save Image")
         folder_button = self.create_button(left_frame, 'ico/folder.png', self.open_folder, "Save Image")
         
         color_icon = ttk.PhotoImage(file='ico/invent.png')
@@ -172,7 +225,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.refresh_thumbnail()
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
-        image = ttk.PhotoImage(file=image_path).subsample(subsample, subsample)
+        image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
         button = ttk.Button(parent, image=image, bootstyle="outline", command=command, text=text)
         button.image = image
         button.pack(pady=pady, side=side)
@@ -262,13 +315,13 @@ class ImageEditorApp(BidFile, ActionState):
             self.refresh_thumbnail()
             self.refresh_image()
 
-    def display_console_image(self):
+    def display_console_bid(self):
         file_ascii = self.file_path.replace('.bid','.ascii')
         bid_ascii = BidASCII(self.grid_bid, self.grid_colors, 1, file_ascii)
         #print(bid_ascii.display_result)
         CmdTerminal(2+self.grid_width*2, 2+self.grid_height, texte=bid_ascii.display_result).run()
-        
-        # Bonus image ASCII
+
+    def display_console_image(self):
         image_ascii = ImageASCII(self.image,1,1,2,0.1)
         #print(image_ascii.display_result)
         CmdTerminal(2+self.grid_width*3, 2+self.grid_height*3, texte=image_ascii.display_result).run()
@@ -295,14 +348,34 @@ class ImageEditorApp(BidFile, ActionState):
         self.mode_draw()
 
     def zoom(self, event):
+        old_scale = self.image_scale
         if event.num == 4 or event.delta > 0:
             self.image_scale += 10
         elif event.num == 5 or event.delta < 0:
             self.image_scale -= 10
         if self.image_scale < self.image_scale_default:
             self.image_scale = self.image_scale_default
+
+        # Calculer le facteur de zoom
+        zoom_factor = self.image_scale / old_scale
+
+        # Obtenir la position actuelle du scroll
+        x_view = self.canvas.xview()[0]
+        y_view = self.canvas.yview()[0]
+
+        # Obtenir la position de la souris relative au canvas
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+
         self.draw_bidfile()
         self.refresh_image()
+
+        # Ajuster la position du scroll pour maintenir le point sous la souris
+        new_x = (canvas_x * zoom_factor - event.x) / (self.grid_width * self.image_scale)
+        new_y = (canvas_y * zoom_factor - event.y) / (self.grid_height * self.image_scale)
+
+        self.canvas.xview_moveto(new_x)
+        self.canvas.yview_moveto(new_y)
 
     def on_mousewheel(self, event):
         """Gestion du défilement vertical"""
@@ -314,31 +387,37 @@ class ImageEditorApp(BidFile, ActionState):
 
     def refresh_image(self):
         tk_image = ImageTk.PhotoImage(self.image)
+        # Supprimer l'ancienne image
+        self.canvas.delete("all")
+        # Créer la nouvelle image
         self.canvas.create_image(0, 0, anchor=ttk.NW, image=tk_image)
         self.canvas.image = tk_image
         
         # Mettre à jour la région de défilement
-        if self.image.width > self.canvas.winfo_width() or self.image.height > self.canvas.winfo_height():
-            self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        image_width = self.grid_width * self.image_scale
+        image_height = self.grid_height * self.image_scale
+        self.canvas.config(scrollregion=(0, 0, image_width, image_height))
+
+        if image_width > self.canvas.winfo_width() or image_height > self.canvas.winfo_height():
             self.v_scrollbar.grid(row=0, column=1, sticky="ns")
             self.h_scrollbar.grid(row=1, column=0, sticky="ew")
-            self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Scroll vertical
-            self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)  # Scroll horizontal
+            self.canvas.bind("<MouseWheel>", self.on_mousewheel)
+            self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)
         else:
-            self.canvas.config(scrollregion=None)
             self.v_scrollbar.grid_remove()
             self.h_scrollbar.grid_remove()
             self.canvas.unbind("<MouseWheel>")
             self.canvas.unbind("<Shift-MouseWheel>")
         
-        # Draw selected cells     
+        # Redessiner les cellules sélectionnées
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 if self.grid_sel_cells[y, x] == 1:
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
-        # Redraw grid if needed
+        
+        # Redessiner la grille si nécessaire
         if self.bool_grid:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
@@ -346,31 +425,21 @@ class ImageEditorApp(BidFile, ActionState):
             self.draw_grill()
 
     def center_image_on_canvas(self, canvas, image):
-        # Convert PIL image to PhotoImage
         photo = ImageTk.PhotoImage(image)
-        
-        # Get canvas dimensions
         canvas_width = canvas.winfo_width()
         canvas_height = canvas.winfo_height()
-        
-        # Calculate position to center the image
         x = (canvas_width - image.width) // 2
         y = (canvas_height - image.height) // 2
-        
-        # Clear previous content
         canvas.delete("all")
-        
-        # Create the image centered
         canvas.create_image(x, y, anchor="nw", image=photo)
-        canvas.image = photo  # Keep a reference!
+        canvas.image = photo
 
     def refresh_thumbnail(self, dimension=80):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
-            # Force update clipboard dimensions
-            self.clipboard.define_dimension()
+            # Obtenir l'image avec la transparence (gérée par Cells)
             thumbnail = self.clipboard.symbol_image
             
-            # Calculate ratio while preserving aspect ratio
+            # Redimensionner l'image
             ratio = thumbnail.width / thumbnail.height
             if ratio > 1:
                 new_width = dimension
@@ -378,14 +447,13 @@ class ImageEditorApp(BidFile, ActionState):
             else:
                 new_height = dimension
                 new_width = int(dimension * ratio)
-            
-            # Resize the image
             thumbnail = thumbnail.resize((new_width, new_height), Image.LANCZOS)
             
-            # Center the image in the canvas
+            # Configurer le canvas pour supporter la transparence
+            self.thumbnail_canvas.configure(bg='lightgray')
             self.center_image_on_canvas(self.thumbnail_canvas, thumbnail)
         else:
-            image = Image.open('ico/empty.png')
+            image = Image.open(resource_path(os.path.join('ico', 'empty.png')))
             image = image.resize((84, 84), Image.LANCZOS)
             self.center_image_on_canvas(self.thumbnail_canvas, image)
 
@@ -411,9 +479,14 @@ class ImageEditorApp(BidFile, ActionState):
         self.grid_height_label.config(text=f"Height :{h}")
 
     def update_coords_cells(self, event):
-        # Update position grid
-        self.grid_x = int(event.x / self.image_scale) 
-        self.grid_y = int(event.y / self.image_scale)
+        # Obtenir les coordonnées relatives au canvas en tenant compte du scroll
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        
+        # Calculer la position de la grille
+        self.grid_x = int(canvas_x / self.image_scale)
+        self.grid_y = int(canvas_y / self.image_scale)
+        
         if self.grid_y >= self.grid_height:
             self.grid_y = self.grid_height-1
         if self.grid_x >= self.grid_width:
@@ -424,8 +497,13 @@ class ImageEditorApp(BidFile, ActionState):
             # Determine the position to paste the cells
             grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
             grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
+            
+            # Calculer la position en tenant compte du scroll
             x1 = (self.grid_x - grid_clipboard_x) * self.image_scale
             y1 = (self.grid_y - grid_clipboard_y) * self.image_scale
+            
+            self.clipboard.image_scale = self.image_scale
+            self.clipboard.draw_cells()
             overview_tk = ImageTk.PhotoImage(self.clipboard.symbol_image)
             if self.image_over_id != 0:
                 self.canvas.delete(self.image_over_id)

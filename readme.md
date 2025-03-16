@@ -27,4 +27,4 @@ ______________________________________________________________
 
 ______________________________________________________________
 # create EXE Windows from editor
-pyinstaller --noconfirm --onefile --add-data="D:/WorkDev/pixel_mania/ico/*;ico" --windowed --name bideditor ./editor.py
+pyinstaller --noconfirm --onefile --add-data="ico;ico" --windowed --name bideditor editor.py

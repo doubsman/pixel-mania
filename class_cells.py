@@ -43,60 +43,82 @@ class Cells:
         self.symbol_path = None
         self.symbol = array_symbol
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
-            self.define_dimension()
             self.draw_cells()
 
     def load_symbol(self, symbol_path):
         if os.path.isfile(symbol_path):
             self.symbol_path = symbol_path
             self.symbol = np.loadtxt(self.symbol_path, dtype=int, delimiter=";")
-            self.define_dimension()
             self.draw_cells()
         return self.symbol
 
     def save_symbol(self, symbol_path):
         np.savetxt(symbol_path, self.symbol, fmt='%i', delimiter=";")
 
-    def draw_cell(self, x, y, cell_type, cell_color, bool_outline=False):
+    def draw_cell(self, x, y, cell_type, cell_color, bool_outline=False, alpha=255):
         """Draw a cell according to its type."""
         left = x * self.image_scale
         top = y * self.image_scale
         right = (x + 1) * self.image_scale
         bottom = (y + 1) * self.image_scale
         color = GRAY_SCALE_DRAW[cell_color]
+        color_with_alpha = color + (alpha,)  # Ajouter le canal alpha à la couleur
 
         if self.image_scale == 1:
             # 1 cellule = 1 pixel
-            self.draw.point((x, y), fill=color)
+            self.draw.point((x, y), fill=color_with_alpha)
         else:
             if bool_outline:
-                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255), outline=(0, 0, 0))
+                self.draw.rectangle([(left, top), (right, bottom)], 
+                                  fill=(255, 255, 255, alpha), 
+                                  outline=(0, 0, 0, alpha))
             else:
-                self.draw.rectangle([(left, top), (right, bottom)], fill=(255, 255, 255))
+                self.draw.rectangle([(left, top), (right, bottom)], 
+                                  fill=(255, 255, 255, alpha))
             if cell_type == 1:  # carré plein
-                if bool_outline: 
-                    self.draw.rectangle([(left, top), (right, bottom)], fill=color)
-                else:
-                    self.draw.rectangle([(left, top), (right, bottom)], fill=color)
+                self.draw.rectangle([(left, top), (right, bottom)], 
+                                  fill=color_with_alpha)
             elif cell_type == 3:  # triangle en bas à droite
-                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], fill=color)
+                self.draw.polygon([(left, bottom), (right, bottom), (right, top)], 
+                                fill=color_with_alpha)
             elif cell_type == 4:  # triangle en haut à droite
-                self.draw.polygon([(left, top), (right, top), (right, bottom)], fill=color)
+                self.draw.polygon([(left, top), (right, top), (right, bottom)], 
+                                fill=color_with_alpha)
             elif cell_type == 5:  # triangle en haut à gauche
-                self.draw.polygon([(left, top), (right, top), (left, bottom)], fill=color)
+                self.draw.polygon([(left, top), (right, top), (left, bottom)], 
+                                fill=color_with_alpha)
             elif cell_type == 6:  # triangle en bas à gauche
-                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], fill=color)
+                self.draw.polygon([(left, bottom), (left, top), (right, bottom)], 
+                                fill=color_with_alpha)
 
     def draw_cells(self):
+        self.define_dimension()
         width = (self.symbol_width) * self.image_scale
         height = (self.symbol_height) * self.image_scale
-        self.symbol_image = Image.new('RGB', (width, height), (255, 255, 255))
+        # Créer une image RGBA pour supporter la transparence
+        self.symbol_image = Image.new('RGBA', (width, height), (255, 255, 255, 0))  # Fond transparent
         self.draw = ImageDraw.Draw(self.symbol_image)
-        for cell in self.symbol:
-            column, row, cell, color_indice = cell
-            column -= self.min_x
-            row -= self.min_y
-            self.draw_cell(column, row, cell, color_indice)
+
+        # Créer un dictionnaire des cellules sélectionnées pour une recherche plus rapide
+        selected_cells = {(cell[0], cell[1]): True for cell in self.symbol}
+
+        # Dessiner toutes les cellules
+        for y in range(height // self.image_scale):
+            for x in range(width // self.image_scale):
+                # Position absolue de la cellule
+                abs_x = x + self.min_x
+                abs_y = y + self.min_y
+                
+                # Vérifier si la cellule est sélectionnée
+                if (abs_x, abs_y) in selected_cells:
+                    # Trouver les propriétés de la cellule
+                    for cell in self.symbol:
+                        if cell[0] == abs_x and cell[1] == abs_y:
+                            self.draw_cell(x, y, cell[2], cell[3], alpha=255)  # Cellule opaque
+                            break
+                else:
+                    # Cellule non sélectionnée - complètement transparente
+                    self.draw_cell(x, y, 0, 0, alpha=0)
 
     def flipv_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:

@@ -3,4 +3,5 @@
 *.jpg
 *.exe
 */*.pyc
-*/tst/*
+./tst/*
+./wrk/*
