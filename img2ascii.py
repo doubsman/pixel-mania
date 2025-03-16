@@ -46,7 +46,7 @@ def decode_image_ascii(image, out_lines, width_cellule=2):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Image to ASCII')
-    parser.add_argument('--path_image', action="store", dest='path_image', default='chevalier.png')
+    parser.add_argument('--path_image', action="store", dest='path_image', default='./png/chevalier.png')
     parser.add_argument('--grid_width', action="store", dest='grid_width', type=int, default=1)
     parser.add_argument('--grid_height', action="store", dest='grid_height', type=int, default=1)
     parser.add_argument('--width_cellule', action="store", dest='width_cellule', type=int, default=2) 

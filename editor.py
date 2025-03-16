@@ -10,7 +10,7 @@ from class_bid import BidFile
 from class_cells import Cells
 from class_canvas import ManageCanvas
 from class_action import ActionState
-
+from class_ascii import ImageASCII, BidASCII
 
 class ImageEditorApp(BidFile, ManageCanvas, ActionState):
     def __init__(self, root):
@@ -53,7 +53,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.bool_paste_mode = False
         # Pasted Image ID
         self.image_over_id = 0
-	    # Collect events until released
+        # Collect events until released
         listener = Listener(on_press=self.on_press)
         listener.start()
         self.controler = Controller()
@@ -100,6 +100,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         fill_button = self.create_button(left_frame, 'ico/fill.png', self.fill_cells, "Grid")
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grid, "Grid")
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
+        ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_image, "Save Image")
         folder_button = self.create_button(left_frame, 'ico/folder.png', self.open_folder, "Save Image")
         
         color_icon = ttk.PhotoImage(file='ico/invent.png')
@@ -121,7 +122,8 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
         self.coord_label.pack(side="bottom")
 
         save_symbol = self.create_button(left_frame, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
-        load_symbol = self.create_button(left_frame, 'ico/open.png', self.open_grid_clipboard, "Save Symbol", 'bottom', 25)
+        load_symbol = self.create_button(left_frame, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
+        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.init_grid_clipboard, "Save Symbol", 'bottom', 25)
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='lightblue')
@@ -134,6 +136,7 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
 
         # create new bid
         self.create_bid()
+        self.refresh_thumbnail()
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=image_path).subsample(subsample, subsample)
@@ -214,6 +217,18 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
                 path_symbol = os.path.join('sym', f'symbol{number:03d}.sym')
             np.savetxt(path_symbol, self.grid_clipboard, fmt='%i', delimiter=";")
 
+    def init_grid_clipboard(self):
+        if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
+            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+            self.grid_clipboard = []
+            self.refresh_thumbnail()
+            self.refresh_image()
+
+    def display_console_image(self):
+        ImageASCII(self.image,1,1,2,0.1)
+        file_ascii = self.file_path.replace('.bid','.ascii')
+        BidASCII(self.grid_bid, self.grid_colors, 1, file_ascii)
+
     def select_palet(self, event):
         grid_y = int(event.y / 50)
         x1, y1 = (0), (grid_y * 50)
@@ -234,48 +249,6 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
         self.mode_draw()
-
-    def update_grid(self, event=None):
-        w = int(self.grid_width_option.get())
-        h = int(self.grid_height_option.get())
-        if h % 2 != 0:
-            h += 1
-            self.grid_height_option.set(h)
-        if w % 2 != 0:
-            w += 1
-            self.grid_width_option.set(w)
-        self.grid_width_label.config(text=f"Width :{w}")
-        self.grid_height_label.config(text=f"Height :{h}")
-        if self.file_path == '':
-            self.new_bid(self.WIDTH, self.HEIGHT,w ,h)
-            self.init_bid()
-        else:
-            # Not Reduce bid file
-            self.change_dimension(w, h)
-            self.init_bid()
-        self.grid_width_label.config(text=f"Width :{w}")
-        self.grid_height_label.config(text=f"Height :{h}")
-            
-
-    def update_coords_cells(self, event):
-        # Update position grid
-        self.grid_x = int(event.x / self.image_scale) 
-        self.grid_y = int(event.y / self.image_scale)
-        if self.grid_y >= self.grid_height:
-            self.grid_y = self.grid_height-1
-        if self.grid_x >= self.grid_width:
-            self.grid_x = self.grid_width-1
-        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
-
-        if self.bool_paste_mode and len(self.grid_clipboard) > 0 :
-            # Determine the position to paste the cells
-            grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
-            grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
-            x1 = (self.grid_x - grid_clipboard_x) * self.image_scale
-            y1 = (self.grid_y - grid_clipboard_y) * self.image_scale
-            overview_tk = ImageTk.PhotoImage(self.clipboard.symbol_image)
-            self.image_over_id = self.canvas.create_image(x1, y1, anchor="nw", image=overview_tk)
-            self.canvas.image_sur = overview_tk
 
     def refresh_image(self):
         #self.center_canvas_on_canvas(self.outercanvas,self.canvas)
@@ -300,6 +273,53 @@ class ImageEditorApp(BidFile, ManageCanvas, ActionState):
             else:
                 thumbnail = thumbnail.resize((int(dimension*ratio), dimension), Image.LANCZOS)
             self.center_image_on_canvas(self.thumbnail_canvas, thumbnail)
+        else:
+            image = Image.open('ico/empty.png')
+            image = image.resize((84, 84), Image.LANCZOS)
+            thumbnail = ImageTk.PhotoImage(image)
+            self.thumbnail_canvas.create_image(0, 0, anchor="nw", image=thumbnail)
+            self.thumbnail_canvas.image = thumbnail
+
+    def update_grid(self, event=None):
+        w = int(self.grid_width_option.get())-1
+        h = int(self.grid_height_option.get())-1
+        if h % 2 != 0:
+            h += 1
+            self.grid_height_option.set(h)
+        if w % 2 != 0:
+            w += 1
+            self.grid_width_option.set(w)
+        self.grid_width_label.config(text=f"Width :{w}")
+        self.grid_height_label.config(text=f"Height :{h}")
+        if self.file_path == '':
+            self.new_bid(self.WIDTH, self.HEIGHT,w ,h)
+            self.init_bid()
+        else:
+            self.change_bid_size(self.WIDTH, self.HEIGHT, w, h)
+            self.init_bid()
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.grid_width_label.config(text=f"Width :{w}")
+        self.grid_height_label.config(text=f"Height :{h}")
+
+    def update_coords_cells(self, event):
+        # Update position grid
+        self.grid_x = int(event.x / self.image_scale) 
+        self.grid_y = int(event.y / self.image_scale)
+        if self.grid_y >= self.grid_height:
+            self.grid_y = self.grid_height-1
+        if self.grid_x >= self.grid_width:
+            self.grid_x = self.grid_width-1
+        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
+
+        if self.bool_paste_mode and len(self.grid_clipboard) > 0 :
+            # Determine the position to paste the cells
+            grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
+            grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
+            x1 = (self.grid_x - grid_clipboard_x) * self.image_scale
+            y1 = (self.grid_y - grid_clipboard_y) * self.image_scale
+            overview_tk = ImageTk.PhotoImage(self.clipboard.symbol_image)
+            self.image_over_id = self.canvas.create_image(x1, y1, anchor="nw", image=overview_tk)
+            self.canvas.image_sur = overview_tk
 
     def mode_draw(self):
         self.bool_paste_mode = False
