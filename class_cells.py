@@ -19,6 +19,7 @@ class Cells:
         self.symbol_width = 0
         self.symbol_height = 0
         self.image_scale = 20
+        self._last_scale = None  # Pour suivre la dernière échelle utilisée
         self.symbol_image = None
         self.draw = None
         self.min_x = self.min_y = self.max_x = self.max_y = 0
@@ -43,13 +44,13 @@ class Cells:
         self.symbol_path = None
         self.symbol = array_symbol
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
 
     def load_symbol(self, symbol_path):
         if os.path.isfile(symbol_path):
             self.symbol_path = symbol_path
             self.symbol = np.loadtxt(self.symbol_path, dtype=int, delimiter=";")
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
         return self.symbol
 
     def save_symbol(self, symbol_path):
@@ -91,34 +92,38 @@ class Cells:
                 self.draw.polygon([(left, bottom), (left, top), (right, bottom)], 
                                 fill=color_with_alpha)
 
-    def draw_cells(self):
-        self.define_dimension()
-        width = (self.symbol_width) * self.image_scale
-        height = (self.symbol_height) * self.image_scale
-        # Créer une image RGBA pour supporter la transparence
-        self.symbol_image = Image.new('RGBA', (width, height), (255, 255, 255, 0))  # Fond transparent
-        self.draw = ImageDraw.Draw(self.symbol_image)
+    def draw_cells(self, force_redraw=False):
+        """Draw cells only if necessary (scale changed or force_redraw is True)"""
+        if self._last_scale != self.image_scale or force_redraw:
+            self.define_dimension()
+            width = (self.symbol_width) * self.image_scale
+            height = (self.symbol_height) * self.image_scale
+            # Créer une image RGBA pour supporter la transparence
+            self.symbol_image = Image.new('RGBA', (width, height), (255, 255, 255, 0))  # Fond transparent
+            self.draw = ImageDraw.Draw(self.symbol_image)
 
-        # Créer un dictionnaire des cellules sélectionnées pour une recherche plus rapide
-        selected_cells = {(cell[0], cell[1]): True for cell in self.symbol}
+            # Créer un dictionnaire des cellules sélectionnées pour une recherche plus rapide
+            selected_cells = {(cell[0], cell[1]): True for cell in self.symbol}
 
-        # Dessiner toutes les cellules
-        for y in range(height // self.image_scale):
-            for x in range(width // self.image_scale):
-                # Position absolue de la cellule
-                abs_x = x + self.min_x
-                abs_y = y + self.min_y
-                
-                # Vérifier si la cellule est sélectionnée
-                if (abs_x, abs_y) in selected_cells:
-                    # Trouver les propriétés de la cellule
-                    for cell in self.symbol:
-                        if cell[0] == abs_x and cell[1] == abs_y:
-                            self.draw_cell(x, y, cell[2], cell[3], alpha=255)  # Cellule opaque
-                            break
-                else:
-                    # Cellule non sélectionnée - complètement transparente
-                    self.draw_cell(x, y, 0, 0, alpha=0)
+            # Dessiner toutes les cellules
+            for y in range(height // self.image_scale):
+                for x in range(width // self.image_scale):
+                    # Position absolue de la cellule
+                    abs_x = x + self.min_x
+                    abs_y = y + self.min_y
+                    
+                    # Vérifier si la cellule est sélectionnée
+                    if (abs_x, abs_y) in selected_cells:
+                        # Trouver les propriétés de la cellule
+                        for cell in self.symbol:
+                            if cell[0] == abs_x and cell[1] == abs_y:
+                                self.draw_cell(x, y, cell[2], cell[3], alpha=255)  # Cellule opaque
+                                break
+                    else:
+                        # Cellule non sélectionnée - complètement transparente
+                        self.draw_cell(x, y, 0, 0, alpha=0)
+            
+            self._last_scale = self.image_scale
 
     def flipv_cells(self):
         if hasattr(self, 'symbol') and len(self.symbol) > 0:
@@ -128,7 +133,6 @@ class Cells:
             for cell in self.symbol:
                 x, y, shape, color = cell
                 new_y = max_y + min_y - y
-                # Inverser les shapes des triangles
                 if shape == 3:
                     new_shape = 4
                 elif shape == 4:
@@ -141,7 +145,7 @@ class Cells:
                     new_shape = shape
                 flips.append((x, new_y, new_shape, color))
             self.symbol = flips
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
             return self.symbol
 
     def fliph_cells(self):
@@ -152,7 +156,6 @@ class Cells:
             for cell in self.symbol:
                 x, y, shape, color = cell
                 new_x = max_x + min_x - x
-                # Inverser les shapes des triangles
                 if shape == 3:
                     new_shape = 6
                 elif shape == 4:
@@ -165,7 +168,7 @@ class Cells:
                     new_shape = shape
                 flips.append((new_x, y, new_shape, color))
             self.symbol = flips
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
             return self.symbol
 
     def rotate_l_cells(self):
@@ -178,7 +181,6 @@ class Cells:
                 x, y, shape, color = cell
                 new_x = y - min_y
                 new_y = max_x - x + min_x
-                # Inverser les shapes des triangles
                 if shape == 3:
                     new_shape = 4
                 elif shape == 4:
@@ -191,7 +193,7 @@ class Cells:
                     new_shape = shape
                 rotate.append((new_x, new_y, new_shape, color))
             self.symbol = rotate
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
             return self.symbol
 
     def rotate_r_cells(self):
@@ -204,7 +206,6 @@ class Cells:
                 x, y, shape, color = cell
                 new_x = max_x - y + min_y
                 new_y = x - min_x
-                # Inverser les shapes des triangles
                 if shape == 3:
                     new_shape = 6
                 elif shape == 4:
@@ -217,7 +218,7 @@ class Cells:
                     new_shape = shape
                 rotate.append((new_x, new_y, new_shape, color))
             self.symbol = rotate
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
             return self.symbol
 
     def inverse_colors(self):
@@ -228,7 +229,7 @@ class Cells:
                 inv_shape, inv_color_indice = self.inverse_cell(shape, color_indice)
                 invert_cells.append((column, row, inv_shape, inv_color_indice))
             self.symbol = invert_cells
-            self.draw_cells()
+            self.draw_cells(force_redraw=True)
             return self.symbol
 
     def inverse_cell(self, shape, color_indice):

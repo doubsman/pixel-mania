@@ -16,6 +16,7 @@ class BidFile(Cells):
         self.grid_height = 0
         self.image = None
         self.draw = None
+        self.grid_sel_cells = None
 
     def load_bidfile(self, path_bid, image_with=None, image_height=None):
         self.path_bid = path_bid
@@ -120,6 +121,242 @@ class BidFile(Cells):
     def save_combined_file(self, path_combined):
         image_array = np.array(self.image)
         np.savez(path_combined, grid_bid=self.grid_bid, grid_colors=self.grid_colors, image=image_array)
+
+    def rotate_l_grid(self):
+        """Rotate selected cells 90° counterclockwise"""
+        if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
+            # Trouver les limites de la sélection
+            selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            min_x = min(selected_x)
+            max_x = max(selected_x)
+            min_y = min(selected_y)
+            max_y = max(selected_y)
+            
+            # Créer une liste temporaire des cellules sélectionnées
+            temp_cells = []
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    if self.grid_sel_cells[y, x] == 1:
+                        temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
+                        # Effacer la cellule d'origine
+                        self.grid_bid[y, x] = 0
+                        self.grid_colors[y, x] = 0
+            
+            # Calculer les nouvelles positions après rotation
+            rotated_cells = []
+            for cell in temp_cells:
+                x, y, shape, color = cell
+                # Calculer les coordonnées relatives au centre de la sélection
+                rel_x = x - min_x
+                rel_y = y - min_y
+                width = max_x - min_x
+                height = max_y - min_y
+                
+                # Rotation 90° vers la gauche
+                new_x = min_x + rel_y
+                new_y = min_y + (width - rel_x)
+                
+                # Rotation des formes de triangle
+                if shape == 3:
+                    new_shape = 4
+                elif shape == 4:
+                    new_shape = 5
+                elif shape == 5:
+                    new_shape = 6
+                elif shape == 6:
+                    new_shape = 3
+                else:
+                    new_shape = shape
+                
+                rotated_cells.append((new_x, new_y, new_shape, color))
+            
+            # Mettre à jour la grille avec les cellules pivotées
+            for x, y, shape, color in rotated_cells:
+                if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+                    self.grid_bid[y, x] = shape
+                    self.grid_colors[y, x] = color
+            
+            # Redessiner
+            self.draw_bidfile()
+            return True
+        return False
+
+    def rotate_r_grid(self):
+        """Rotate selected cells 90° clockwise"""
+        if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
+            # Trouver les limites de la sélection
+            selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            min_x = min(selected_x)
+            max_x = max(selected_x)
+            min_y = min(selected_y)
+            max_y = max(selected_y)
+            
+            # Créer une liste temporaire des cellules sélectionnées
+            temp_cells = []
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    if self.grid_sel_cells[y, x] == 1:
+                        temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
+                        # Effacer la cellule d'origine
+                        self.grid_bid[y, x] = 0
+                        self.grid_colors[y, x] = 0
+            
+            # Calculer les nouvelles positions après rotation
+            rotated_cells = []
+            for cell in temp_cells:
+                x, y, shape, color = cell
+                # Calculer les coordonnées relatives au centre de la sélection
+                rel_x = x - min_x
+                rel_y = y - min_y
+                width = max_x - min_x
+                height = max_y - min_y
+                
+                # Rotation 90° vers la droite
+                new_x = min_x + (height - rel_y)
+                new_y = min_y + rel_x
+                
+                # Rotation des formes de triangle
+                if shape == 3:
+                    new_shape = 6
+                elif shape == 4:
+                    new_shape = 3
+                elif shape == 5:
+                    new_shape = 4
+                elif shape == 6:
+                    new_shape = 5
+                else:
+                    new_shape = shape
+                
+                rotated_cells.append((new_x, new_y, new_shape, color))
+            
+            # Mettre à jour la grille avec les cellules pivotées
+            for x, y, shape, color in rotated_cells:
+                if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+                    self.grid_bid[y, x] = shape
+                    self.grid_colors[y, x] = color
+            
+            # Redessiner
+            self.draw_bidfile()
+            return True
+        return False
+
+    def flipv_grid(self):
+        """Flip selected cells vertically"""
+        if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
+            # Trouver les limites de la sélection
+            selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            min_x = min(selected_x)
+            max_x = max(selected_x)
+            min_y = min(selected_y)
+            max_y = max(selected_y)
+            
+            # Créer une liste temporaire des cellules sélectionnées
+            temp_cells = []
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    if self.grid_sel_cells[y, x] == 1:
+                        temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
+                        # Effacer la cellule d'origine
+                        self.grid_bid[y, x] = 0
+                        self.grid_colors[y, x] = 0
+            
+            # Calculer les nouvelles positions après retournement vertical
+            flipped_cells = []
+            for cell in temp_cells:
+                x, y, shape, color = cell
+                # Calculer les coordonnées relatives au centre de la sélection
+                rel_x = x - min_x
+                rel_y = y - min_y
+                
+                # Retournement vertical
+                new_x = min_x + rel_x
+                new_y = max_y - rel_y
+                
+                # Retournement des formes de triangle
+                if shape == 3:
+                    new_shape = 4
+                elif shape == 4:
+                    new_shape = 3
+                elif shape == 5:
+                    new_shape = 6
+                elif shape == 6:
+                    new_shape = 5
+                else:
+                    new_shape = shape
+                
+                flipped_cells.append((new_x, new_y, new_shape, color))
+            
+            # Mettre à jour la grille avec les cellules retournées
+            for x, y, shape, color in flipped_cells:
+                if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+                    self.grid_bid[y, x] = shape
+                    self.grid_colors[y, x] = color
+            
+            # Redessiner
+            self.draw_bidfile()
+            return True
+        return False
+
+    def fliph_grid(self):
+        """Flip selected cells horizontally"""
+        if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
+            # Trouver les limites de la sélection
+            selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
+            min_x = min(selected_x)
+            max_x = max(selected_x)
+            min_y = min(selected_y)
+            max_y = max(selected_y)
+            
+            # Créer une liste temporaire des cellules sélectionnées
+            temp_cells = []
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    if self.grid_sel_cells[y, x] == 1:
+                        temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
+                        # Effacer la cellule d'origine
+                        self.grid_bid[y, x] = 0
+                        self.grid_colors[y, x] = 0
+            
+            # Calculer les nouvelles positions après retournement horizontal
+            flipped_cells = []
+            for cell in temp_cells:
+                x, y, shape, color = cell
+                # Calculer les coordonnées relatives au centre de la sélection
+                rel_x = x - min_x
+                rel_y = y - min_y
+                
+                # Retournement horizontal
+                new_x = max_x - rel_x
+                new_y = min_y + rel_y
+                
+                # Retournement des formes de triangle
+                if shape == 3:
+                    new_shape = 6
+                elif shape == 4:
+                    new_shape = 5
+                elif shape == 5:
+                    new_shape = 4
+                elif shape == 6:
+                    new_shape = 3
+                else:
+                    new_shape = shape
+                
+                flipped_cells.append((new_x, new_y, new_shape, color))
+            
+            # Mettre à jour la grille avec les cellules retournées
+            for x, y, shape, color in flipped_cells:
+                if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+                    self.grid_bid[y, x] = shape
+                    self.grid_colors[y, x] = color
+            
+            # Redessiner
+            self.draw_bidfile()
+            return True
+        return False
 
 if __name__ == '__main__':
     Myclass = BidFile()
