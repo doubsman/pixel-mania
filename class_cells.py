@@ -24,6 +24,10 @@ class Cells:
         self.draw = None
         self.min_x = self.min_y = self.max_x = self.max_y = 0
 
+    def get_color(self, color_index):
+        """Get the RGB color for a given color index"""
+        return GRAY_SCALE_DRAW.get(color_index, (255, 255, 255))  # Default to white if index not found
+
     def define_dimension(self):
         self.min_x = min([cell[0] for cell in self.symbol])
         self.min_y = min([cell[1] for cell in self.symbol])

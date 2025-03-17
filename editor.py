@@ -14,7 +14,7 @@ from class_consol import CmdTerminal
 import sys
 import logging
 
-# Configuration du logging
+# Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
         
-        # Si le chemin contient déjà 'ico', ne pas l'ajouter à nouveau
+        # If path already contains 'ico', don't add it again
         if relative_path.startswith(('ico/', 'ico\\')):
             full_path = os.path.join(base_path, relative_path)
         else:
@@ -34,15 +34,15 @@ def resource_path(relative_path):
         logger.debug(f"Base path: {base_path}")
         logger.debug(f"Full path: {full_path}")
         
-        # Vérifier si le fichier existe
+        # Check if file exists
         if not os.path.exists(full_path):
             logger.error(f"Resource not found: {full_path}")
-            # Essayer de trouver le fichier dans le dossier courant
+            # Try to find the file in current directory
             alt_path = os.path.join(os.getcwd(), relative_path)
             if os.path.exists(alt_path):
                 logger.debug(f"Resource found in current directory: {alt_path}")
                 return alt_path
-            # Lister les fichiers disponibles dans le dossier base
+            # List available files in base directory
             logger.debug(f"Files in {base_path}:")
             for root, dirs, files in os.walk(base_path):
                 for item in dirs + files:
@@ -62,11 +62,14 @@ class ImageEditorApp(BidFile, ActionState):
         self.root.title(self.tittle)
         self.root.geometry("1700x1520")
         self.root.resizable(width=False, height=False)
+        
+        # Intercept window closing
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.WIDTH = 1700-200-100
         self.HEIGHT = 1520-20-100
         self.file_path = ""
-        # Mode Grill Canvas
+        # Canvas Grid Mode
         self.bool_grid = True
         # Backup BID necessary
         self.bool_backup = False
@@ -75,38 +78,38 @@ class ImageEditorApp(BidFile, ActionState):
         # Clipboard
         self.grid_clipboard = []
         self.clipboard = Cells()
-        # (x,y) Curent position cursor
+        # Current cursor position (x,y)
         self.grid_x = 1
         self.grid_y = 1
-        # UI option
+        # UI options
         self.grid_width_option = ttk.IntVar(value=0)
         self.grid_height_option = ttk.IntVar(value=0)
-        # Selection palette
+        # Palette selection
         self.current_select_shape = 1
         self.current_select_color = 5
-        # Mode selection Area 
+        # Area selection mode
         self.selection_start = None
         self.selection_end = None
         self.selection_rect = None
-        # Mode selection ADD +
+        # Selection ADD mode
         self.bool_mode_add_selection = False
-        # Mode Past Cells
+        # Paste Cells mode
         self.bool_paste_mode = False
         # Pasted Image ID
         self.image_over_id = 0
-        # image_scale default
+        # Default image scale
         self.image_scale_default = 1
         # Collect events until released
         listener = Listener(on_press=self.on_press)
         listener.start()
         self.controler = Controller()
         
-        # Logging de l'environnement
+        # Environment logging
         logger.debug(f"Python executable: {sys.executable}")
         logger.debug(f"Current working directory: {os.getcwd()}")
         logger.debug(f"MEIPASS: {getattr(sys, '_MEIPASS', 'Not running in PyInstaller')}")
         
-        # Vérifier que le dossier ico existe
+        # Check if ico directory exists
         ico_path = resource_path('ico')
         if not os.path.exists(ico_path):
             print(f"Warning: ico directory not found at {ico_path}")
@@ -116,11 +119,10 @@ class ImageEditorApp(BidFile, ActionState):
         self.initialize_ui()
 
     def initialize_ui(self):
-        # Set the window icon
         icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
         self.root.iconphoto(False, icon)
 
-        # The left frame to contain the 4 buttons
+        # The left frame to contain the buttons
         left_frame = ttk.Frame(self.root)
         left_frame['borderwidth'] = 5
         left_frame.pack(side="left", fill="y")
@@ -129,21 +131,25 @@ class ImageEditorApp(BidFile, ActionState):
         left_frame2['borderwidth'] = 5
         left_frame2.pack(side="left", fill="y")
 
-        # Frame pour la largeur
+        # Width frame
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=5)
         width_frame = ttk.Frame(left_frame)
         width_frame.pack()
-        ttk.Button(width_frame, text="-", command=lambda: self.change_size('width', -2), bootstyle="outline", width=0).pack(side="left", padx=1)
+        ttk.Button(width_frame, text="-", command=lambda: self.change_size('width', -2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         self.grid_width_label = ttk.Label(width_frame, text="48")
-        self.grid_width_label.pack(side="left", padx=2)
-        ttk.Button(width_frame, text="+", command=lambda: self.change_size('width', 2), bootstyle="outline", width=0).pack(side="left", padx=1)
+        self.grid_width_label.pack(side="left", padx=2, pady=0)
+        ttk.Button(width_frame, text="+", command=lambda: self.change_size('width', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=5)
 
-        # Frame pour la hauteur
+        # Frame for height
+        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
         height_frame = ttk.Frame(left_frame2)
         height_frame.pack()
-        ttk.Button(height_frame, text="-", command=lambda: self.change_size('height', -2), bootstyle="outline", width=0).pack(side="left", padx=1)
+        ttk.Button(height_frame, text="-", command=lambda: self.change_size('height', -2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         self.grid_height_label = ttk.Label(height_frame, text="48")
-        self.grid_height_label.pack(side="left", padx=2)
-        ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=0).pack(side="left", padx=1)
+        self.grid_height_label.pack(side="left", padx=2, pady=0)
+        ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
+        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
 
         open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
         new_button = self.create_button(left_frame2, 'ico/plus.png', self.create_bid, "New")
@@ -165,9 +171,10 @@ class ImageEditorApp(BidFile, ActionState):
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid")
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save Image")
-        imageascii_button = self.create_button(left_frame, 'ico/terminal.png', self.display_console_image, "Save Image")
+        imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Save Image")
         folder_button = self.create_button(left_frame, 'ico/folder.png', self.open_folder, "Save Image")
         
+        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame2, width=50, height=500, bg='#E0E0E0')
         self.palet.create_image(0, 0, anchor="nw", image=color_icon)
@@ -176,7 +183,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
-        self.mode_copy = ttk.Label(left_frame2, text="-")
+        self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)")
         self.mode_copy.pack(side="bottom")
 
         self.thumbnail_canvas = ttk.Canvas(left_frame2, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
@@ -188,7 +195,7 @@ class ImageEditorApp(BidFile, ActionState):
 
         save_symbol = self.create_button(left_frame, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
-        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.init_grid_clipboard, "Save Symbol", 'bottom', 25)
+        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.clear_grid_clipboard, "Save Symbol", 'bottom', 25)
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
@@ -207,30 +214,30 @@ class ImageEditorApp(BidFile, ActionState):
                            xscrollcommand=self.h_scrollbar.set,
                            yscrollcommand=self.v_scrollbar.set)
 
-        # Configurer les scrollbars
+        # Configure scrollbars
         self.v_scrollbar.config(command=self.canvas.yview)
         self.h_scrollbar.config(command=self.canvas.xview)
 
-        # Placer le canvas d'abord
+        # Place canvas first
         self.canvas.grid(row=0, column=0, sticky="nsew")
         
-        # Configurer les scrollbars pour qu'elles soient placées correctement
+        # Configure scrollbars to be placed correctly
         self.v_scrollbar.grid(row=0, column=1, sticky="ns")
         self.h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        # Configurer le redimensionnement
+        # Configure resizing
         self.canvas_frame.grid_rowconfigure(0, weight=1)
         self.canvas_frame.grid_columnconfigure(0, weight=1)
         
-        # Bind les événements de la molette de souris pour le scrolling
-        self.canvas.bind("<Control-MouseWheel>", self.zoom)  # Zoom avec Ctrl+Molette
-        self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Scroll vertical
-        self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)  # Scroll horizontal
+        # Bind mouse wheel events for scrolling
+        self.canvas.bind("<Control-MouseWheel>", self.zoom)  # Zoom with Ctrl+Wheel
+        self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Vertical scroll
+        self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)  # Horizontal scroll
         self.canvas.bind("<Button-4>", self.zoom)
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
-        # create new bid
+
         self.create_bid()
         self.refresh_thumbnail()
 
@@ -318,23 +325,50 @@ class ImageEditorApp(BidFile, ActionState):
                 path_symbol = os.path.join('sym', f'symbol{number:03d}.sym')
             np.savetxt(path_symbol, self.grid_clipboard, fmt='%i', delimiter=";")
 
-    def init_grid_clipboard(self):
+    def clear_grid_clipboard(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
-            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.grid_clipboard = []
             self.refresh_thumbnail()
-            self.refresh_image()
 
     def display_console_bid(self):
         file_ascii = self.file_path.replace('.bid','.ascii')
         bid_ascii = BidASCII(self.grid_bid, self.grid_colors, 1, file_ascii)
-        #print(bid_ascii.display_result)
-        CmdTerminal(2+self.grid_width*2, 2+self.grid_height, texte=bid_ascii.display_result).run()
+        
+        # Calculate width in characters
+        # For ASCII model 1, each cell is 2 characters wide
+        # Plus ANSI color control characters (about 20 characters per cell)
+        width_cellule = 2
+        width_chars = 2 + self.grid_width * (width_cellule + 20) + 2  # +2 for vertical borders
+        
+        # Calculate height in characters
+        height_chars = self.grid_height + 2  # +2 for horizontal borders
+        
+        # Limit dimensions to CmdTerminal maximums
+        width_chars = min(width_chars, 150)  # Maximum 150 characters wide
+        height_chars = min(height_chars, 50)  # Maximum 50 lines
+        
+        CmdTerminal(width_chars, height_chars, texte=bid_ascii.display_result).run()
 
     def display_console_image(self):
+        # Create ASCII image with appropriate parameters
         image_ascii = ImageASCII(self.image,1,1,2,0.1)
-        #print(image_ascii.display_result)
-        CmdTerminal(2+self.grid_width*3, 2+self.grid_height*3, texte=image_ascii.display_result).run()
+        
+        # Get image dimensions
+        width, height = self.image.size
+        
+        # Calculate required dimensions based on content
+        # For each image pixel, we have 2 characters (width_cellule=2)
+        # Plus 4 for vertical borders and spaces (2 on each side)
+        width_chars = width * 2 + 4
+        
+        # Height = number of image lines + 2 for horizontal borders
+        height_chars = height + 2
+        
+        # Limit dimensions to CmdTerminal maximums
+        width_chars = min(width_chars, 150)  # Maximum 150 characters wide
+        height_chars = min(height_chars, 50)  # Maximum 50 lines
+        
+        CmdTerminal(width_chars, height_chars, texte=image_ascii.display_result).run()
 
     def select_palet(self, event):
         grid_y = int(event.y / 50)
@@ -376,22 +410,23 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.yview_moveto(new_y)
 
     def on_mousewheel(self, event):
-        """Gestion du défilement vertical"""
+        """Handle vertical scrolling"""
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def on_shift_mousewheel(self, event):
-        """Gestion du défilement horizontal"""
+        """Handle horizontal scrolling"""
         self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def refresh_image(self):
         tk_image = ImageTk.PhotoImage(self.image)
-        # Supprimer l'ancienne image
+        # Delete old image
         self.canvas.delete("all")
-        # Créer la nouvelle image
+        # Create new image
         self.canvas.create_image(0, 0, anchor=ttk.NW, image=tk_image)
         self.canvas.image = tk_image
+        self.outercanvas.configure(bg='#E0E0E0')
         
-        # Mettre à jour la région de défilement
+        # Update scroll region
         image_width = self.grid_width * self.image_scale
         image_height = self.grid_height * self.image_scale
         self.canvas.config(scrollregion=(0, 0, image_width, image_height))
@@ -407,15 +442,15 @@ class ImageEditorApp(BidFile, ActionState):
             self.canvas.unbind("<MouseWheel>")
             self.canvas.unbind("<Shift-MouseWheel>")
         
-        # Redessiner les cellules sélectionnées
+        # Redraw selected cells
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 if self.grid_sel_cells[y, x] == 1:
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
         
-        # Redessiner la grille si nécessaire
+        # Redraw grid if necessary
         if self.bool_grid:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
@@ -434,10 +469,10 @@ class ImageEditorApp(BidFile, ActionState):
 
     def refresh_thumbnail(self, dimension=80):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
-            # Obtenir l'image avec la transparence (gérée par Cells)
+            # Get image with transparency (handled by Cells)
             thumbnail = self.clipboard.symbol_image
             
-            # Redimensionner l'image
+            # Resize image
             ratio = thumbnail.width / thumbnail.height
             if ratio > 1:
                 new_width = dimension
@@ -447,7 +482,7 @@ class ImageEditorApp(BidFile, ActionState):
                 new_width = int(dimension * ratio)
             thumbnail = thumbnail.resize((new_width, new_height), Image.LANCZOS)
             
-            # Configurer le canvas pour supporter la transparence
+            # Configure canvas to support transparency
             self.thumbnail_canvas.configure(bg='#E0E0E0')
             self.center_image_on_canvas(self.thumbnail_canvas, thumbnail)
         else:
@@ -456,7 +491,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.center_image_on_canvas(self.thumbnail_canvas, image)
 
     def change_size(self, dimension, delta):
-        """Change la taille de la grille en incrémentant ou décrémentant"""
+        """Change the size of the grid by incrementing or decrementing"""
         if dimension == 'width':
             current = int(self.grid_width_label.cget("text"))
             new_size = current + delta
@@ -475,7 +510,7 @@ class ImageEditorApp(BidFile, ActionState):
                 self.update_grid_size(None, new_size)
 
     def update_grid_size(self, new_width=None, new_height=None):
-        """Met à jour la taille de la grille"""
+        """Update the size of the grid"""
         if self.file_path == '':
             self.new_bid(self.WIDTH, self.HEIGHT, new_width or self.grid_width, new_height or self.grid_height)
             self.init_bid()
@@ -485,11 +520,11 @@ class ImageEditorApp(BidFile, ActionState):
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
 
     def update_coords_cells(self, event):
-        # Obtenir les coordonnées relatives au canvas en tenant compte du scroll
+        # Get canvas coordinates considering scroll position
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
         
-        # Calculer la position de la grille
+        # Calculate grid position
         self.grid_x = int(canvas_x / self.image_scale)
         self.grid_y = int(canvas_y / self.image_scale)
         
@@ -504,7 +539,7 @@ class ImageEditorApp(BidFile, ActionState):
             grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
             grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
             
-            # Calculer la position en tenant compte du scroll
+            # Calculate position considering scroll
             x1 = (self.grid_x - grid_clipboard_x) * self.image_scale
             y1 = (self.grid_y - grid_clipboard_y) * self.image_scale
             
@@ -545,6 +580,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<ButtonRelease-1>", self.end_selection)
 
     def start_selection(self, event):
+        """Start the selection rectangle."""
         if not self.bool_mode_add_selection:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.canvas.delete(f"cell_select")
@@ -558,6 +594,7 @@ class ImageEditorApp(BidFile, ActionState):
         )
 
     def update_selection(self, event):
+        """Grow the selection rectangle."""
         self.selection_end = (event.x, event.y)
         self.canvas.coords(
             self.selection_rect,
@@ -566,11 +603,13 @@ class ImageEditorApp(BidFile, ActionState):
         )
 
     def end_selection(self, event):
+        """End the selection rectangle."""
         self.selection_end = (event.x, event.y)
         self.update_selected_cells()
         self.canvas.delete("selection_rect")
 
     def update_selected_cells(self):
+        """Update the selected cells."""
         start_x = min(self.selection_start[0], self.selection_end[0]) // self.image_scale
         start_y = min(self.selection_start[1], self.selection_end[1]) // self.image_scale
         end_x = max(self.selection_start[0], self.selection_end[0]) // self.image_scale
@@ -581,7 +620,7 @@ class ImageEditorApp(BidFile, ActionState):
                 self.grid_sel_cells[y, x] = 1
                 x1, y1 = (x * self.image_scale), (y * self.image_scale)
                 x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
 
     def mode_select(self):
         self.canvas.unbind("<ButtonPress-1>")
@@ -606,7 +645,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_sel_cells[self.grid_y, self.grid_x] = 1
             x1, y1 = (self.grid_x * self.image_scale), (self.grid_y * self.image_scale)
             x2, y2 = ((self.grid_x+1) * self.image_scale), ((self.grid_y+1) * self.image_scale)
-            self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
+            self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
 
     def mode_magicselect(self):
         self.canvas.unbind("<ButtonPress-1>")
@@ -614,7 +653,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.magic_select_cellules)
         self.bool_paste_mode = False
-        self.bool_mode_add_selection = False
         self.controler.press(Key.ctrl_l)
         if self.image_over_id != 0:
             self.canvas.delete(self.image_over_id)
@@ -623,33 +661,32 @@ class ImageEditorApp(BidFile, ActionState):
     def magic_select_cellules(self, event):
         if not self.bool_mode_add_selection:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-            self.canvas.delete(f"cell_select")
+            self.canvas.delete("cell_select")
         grid_x = self.grid_x
         grid_y = self.grid_y
-        # Récupérer la couleur de la cellule cliquée
+        # Get the color of the clicked cell
         cell_color = self.grid_colors[grid_y, grid_x]
-        # Sélectionner les cellules de la même couleur qui sont collées à la cellule cliquée
         self.select_adjacent_cells(grid_x, grid_y, cell_color)
-        # Mettre à jour l'affichage
         self.update_magic_selection()
 
     def select_adjacent_cells(self, x, y, color):
-        # Vérifier si la cellule est dans les limites du grid
+        # Check if cell is within grid boundaries
         if x < 0 or x >= self.grid_width or y < 0 or y >= self.grid_height:
             return
-        # Vérifier si la cellule a déjà été sélectionnée
+        # Check if cell is already selected
         if self.grid_sel_cells[y, x] == 1:
             return
-        # Vérifier si la cellule a la même couleur que la cellule cliquée
+        # Check if cell has the same color
         if self.grid_colors[y, x] != color:
             return
-        # Sélectionner la cellule
+        # Select the cell
         self.grid_sel_cells[y, x] = 1
-        # Sélectionner les cellules adjacentes
-        self.select_adjacent_cells(x-1, y, color)
-        self.select_adjacent_cells(x+1, y, color)
-        self.select_adjacent_cells(x, y-1, color)
-        self.select_adjacent_cells(x, y+1, color)
+        
+        # Check adjacent cells
+        self.select_adjacent_cells(x, y - 1, color)  # Up
+        self.select_adjacent_cells(x, y + 1, color)  # Down
+        self.select_adjacent_cells(x - 1, y, color)  # Left
+        self.select_adjacent_cells(x + 1, y, color)  # Right
 
     def update_magic_selection(self):
         for y in range(self.grid_height):
@@ -657,7 +694,7 @@ class ImageEditorApp(BidFile, ActionState):
                 if self.grid_sel_cells[y, x] == 1:
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, tags=['cell_select', f"cell_select{x}_{y}"])
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
 
     def copy_cells(self, cut=False):
         self.canvas.unbind("<ButtonPress-1>")
@@ -689,7 +726,7 @@ class ImageEditorApp(BidFile, ActionState):
 
     def paste_cells(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
-            # mode Past Activate
+            # Paste mode activated
             self.bool_paste_mode = True  
             self.canvas.unbind("<ButtonPress-1>")
             self.canvas.unbind("<B1-Motion>")
@@ -752,16 +789,8 @@ class ImageEditorApp(BidFile, ActionState):
     def inverse_colors(self):
         if len(self.canvas.gettags("cell_select")) > 0:
             self.save_state()
-            for y in range(self.grid_height):
-                for x in range(self.grid_width):
-                    if self.grid_sel_cells[y, x] == 1:
-                        color_indice = self.grid_colors[y, x]
-                        shape = self.grid_bid[y, x]
-                        shape, color_indice = self.inverse_cell(shape, color_indice)
-                        self.grid_colors[y, x] = color_indice
-                        self.grid_bid[y, x] = shape
-                        self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
-            self.refresh_image()
+            if self.inverse_grid():
+                self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.inverse_colors()
             self.refresh_thumbnail()
@@ -830,8 +859,13 @@ class ImageEditorApp(BidFile, ActionState):
             else:
                 self.mode_copy.config(text=f"SUB (✖)")
         
+    def on_closing(self):
+        if self.bool_backup:
+            if askyesno("Save", "There are unsaved changes. Do you want to save before quitting?"):
+                self.save_bid()
+        self.root.destroy()
 
 if __name__ == "__main__":
-    root = ttk.Window(themename="cosmo")
+    root = ttk.Window(themename="minty")
     app = ImageEditorApp(root)
     root.mainloop()

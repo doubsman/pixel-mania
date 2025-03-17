@@ -1,8 +1,9 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog, messagebox, Entry
-from PIL import ImageTk
+from PIL import ImageTk, Image
 from class_bid_imp import ImageProcessor
 from class_bid import BidFile
+import numpy as np
 
 class ImageProcessorApp:
     def __init__(self, root):
@@ -101,12 +102,47 @@ class ImageProcessorApp:
                     display_cells_scale_reduce=self.display_cells_scale_reduce.get(),
                     model_ascii=self.model_ascii.get()
                 )
+                # Convertir la liste de tuples en grilles 2D
+                grid_bid = np.zeros((self.grid_height.get(), self.grid_width.get()), dtype=int)
+                grid_colors = np.zeros((self.grid_height.get(), self.grid_width.get()), dtype=int)
+                for x, y, shape, color in cells_bid:
+                    grid_bid[y, x] = shape
+                    grid_colors[y, x] = color
+                
+                self.class_BidFile.grid_bid = grid_bid
+                self.class_BidFile.grid_colors = grid_colors
+                self.class_BidFile.grid_width = self.grid_width.get()
+                self.class_BidFile.grid_height = self.grid_height.get()
                 self.class_BidFile.image_scale = 20
-                self.class_BidFile.grid_bid = cells_bid
-                self.class_BidFile.draw_cells()
-                image = ImageTk.PhotoImage(self.class_BidFile.image)
-                self.canvas.create_image(0, 0, anchor="nw", image=image)
-                self.canvas.image = image
+                self.class_BidFile.draw_bidfile()
+                
+                # Obtenir les dimensions du canvas
+                canvas_width = max(1, self.canvas.winfo_width())
+                canvas_height = max(1, self.canvas.winfo_height())
+                
+                # Obtenir les dimensions de l'image
+                image_width = max(1, self.class_BidFile.image.width)
+                image_height = max(1, self.class_BidFile.image.height)
+                
+                # Calculer l'échelle pour que l'image s'adapte au canvas
+                scale_x = canvas_width / image_width
+                scale_y = canvas_height / image_height
+                scale = min(scale_x, scale_y)
+                
+                # Redimensionner l'image
+                new_width = max(1, int(image_width * scale))
+                new_height = max(1, int(image_height * scale))
+                resized_image = self.class_BidFile.image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                
+                # Convertir en PhotoImage et afficher
+                image = ImageTk.PhotoImage(resized_image)
+                
+                # Effacer le canvas et centrer l'image
+                self.canvas.delete("all")
+                x = (canvas_width - new_width) // 2
+                y = (canvas_height - new_height) // 2
+                self.canvas.create_image(x, y, anchor="nw", image=image)
+                self.canvas.image = image  # Garder une référence
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
