@@ -58,7 +58,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Image Bid Editor v0.99a"
+        self.tittle = "Image Bid Editor v1.00beta"
         self.root.title(self.tittle)
         self.root.geometry("1700x1520")
         self.root.resizable(width=False, height=False)
@@ -183,7 +183,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
-        self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)")
+        self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)", foreground="blue")
         self.mode_copy.pack(side="bottom")
 
         self.thumbnail_canvas = ttk.Canvas(left_frame2, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
@@ -237,7 +237,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
-
         self.create_bid()
         self.refresh_thumbnail()
 
@@ -251,12 +250,14 @@ class ImageEditorApp(BidFile, ActionState):
     def open_bid(self):
         bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
         if bid_path != '':
+            self.save_bid()
             self.file_path = bid_path
             self.root.title(f'{self.tittle} [{self.file_path}]')  
             self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
             self.init_bid()
 
     def create_bid(self):
+        self.save_bid()
         self.root.title(f'{self.tittle} : [NEW]')
         self.file_path = ''
         self.new_bid(self.WIDTH, self.HEIGHT)
@@ -583,14 +584,15 @@ class ImageEditorApp(BidFile, ActionState):
         """Start the selection rectangle."""
         if not self.bool_mode_add_selection:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-            self.canvas.delete(f"cell_select")
+            self.canvas.delete("cell_select")
         self.bool_paste_mode = False
         self.selection_start = (event.x, event.y)
         self.selection_end = (event.x, event.y)
+        outline_color = "green" if self.bool_mode_add_selection else "blue"
         self.selection_rect = self.canvas.create_rectangle(
             self.selection_start[0], self.selection_start[1],
             self.selection_end[0], self.selection_end[1],
-            outline="blue", dash=(4, 4), tags="selection_rect"
+            outline=outline_color, dash=(4, 4), tags="selection_rect"
         )
 
     def update_selection(self, event):
@@ -628,8 +630,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.select_cellules)
         self.bool_paste_mode = False
-        self.bool_mode_add_selection = False
-        self.controler.press(Key.ctrl_l)
+        if not self.bool_mode_add_selection:
+            self.controler.press(Key.insert)
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -639,9 +641,10 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.canvas.delete("cell_select")
         if self.grid_sel_cells[self.grid_y, self.grid_x] == 1:
-            self.grid_sel_cells[self.grid_y, self.grid_x] = 0
-            self.canvas.delete(f"cell_select{self.grid_x}_{self.grid_y}")
-        elif self.grid_sel_cells[self.grid_y, self.grid_x] == 0:
+            if not self.bool_mode_add_selection:
+                self.grid_sel_cells[self.grid_y, self.grid_x] = 0
+                self.canvas.delete(f"cell_select{self.grid_x}_{self.grid_y}")
+        else:
             self.grid_sel_cells[self.grid_y, self.grid_x] = 1
             x1, y1 = (self.grid_x * self.image_scale), (self.grid_y * self.image_scale)
             x2, y2 = ((self.grid_x+1) * self.image_scale), ((self.grid_y+1) * self.image_scale)
@@ -653,7 +656,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.magic_select_cellules)
         self.bool_paste_mode = False
-        self.controler.press(Key.ctrl_l)
+        if not self.bool_mode_add_selection:
+            self.controler.press(Key.insert)
         if self.image_over_id != 0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -715,10 +719,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_state()                      
             self.refresh_image()
 
-        if not self.bool_mode_add_selection:
-            self.grid_clipboard = selected_cells
-        else: 
-            self.grid_clipboard += selected_cells
+        self.grid_clipboard = selected_cells
         self.clipboard.insert_symbol(self.grid_clipboard)
         self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
@@ -855,9 +856,11 @@ class ImageEditorApp(BidFile, ActionState):
         if key == Key.insert:
             self.bool_mode_add_selection = not self.bool_mode_add_selection
             if self.bool_mode_add_selection:
-                self.mode_copy.config(text=f"ADD (✚)")
+                self.mode_copy.config(text="ADD (✚)", foreground="green")
+                self.canvas.config(cursor="plus")
             else:
-                self.mode_copy.config(text=f"SUB (✖)")
+                self.mode_copy.config(text="SUB (✖)", foreground="blue")
+                self.canvas.config(cursor="")
         
     def on_closing(self):
         if self.bool_backup:

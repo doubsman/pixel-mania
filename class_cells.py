@@ -5,10 +5,10 @@ from PIL import Image, ImageDraw
 
 GRAY_SCALE_DRAW = {
     0: (255, 255, 255),  # Blanc
-    1: (192, 192, 192),  # Gris très clair
-    2: (128, 128, 128),  # Gris clair
-    3: (64, 64, 64),     # Gris foncé
-    4: (32, 32, 32),     # Gris très foncé
+    1: (227, 227, 227),  # Gris très clair
+    2: (192, 192, 192),  # Gris clair
+    3: (128, 128, 128),  # Gris foncé
+    4: (64, 64, 64),     # Gris très foncé
     5: (0, 0, 0)         # Noir
 }
 
@@ -239,21 +239,42 @@ class Cells:
     def inverse_cell(self, shape, color_indice):
         new_color_indice = color_indice
         new_shape = shape
+        
+        # Inversion des couleurs en passant par les gris
+        if color_indice == 0:  # Blanc -> Noir
+            new_color_indice = 5
+        elif color_indice == 1:  # Gris très clair -> Gris très foncé
+            new_color_indice = 4
+        elif color_indice == 2:  # Gris clair -> Gris foncé
+            new_color_indice = 3
+        elif color_indice == 3:  # Gris foncé -> Gris clair
+            new_color_indice = 2
+        elif color_indice == 4:  # Gris très foncé -> Gris très clair
+            new_color_indice = 1
+        elif color_indice == 5:  # Noir -> Blanc
+            new_color_indice = 0
+            
+        # Inversion des formes
         if shape < 2:
             if color_indice == 0:
-                new_color_indice = 5
                 new_shape = 1
+                new_color_indice = 5  # Blanc -> Noir
             if color_indice == 5:
-                new_color_indice = 0
                 new_shape = 0
-        elif shape == 3:
+                new_color_indice = 0  # Noir -> Blanc
+        elif shape == 3:  # triangle en bas à droite -> triangle en haut à gauche
             new_shape = 5
-        elif shape == 4:
+            new_color_indice = 5  # Garde la couleur noire
+        elif shape == 4:  # triangle en haut à droite -> triangle en bas à gauche
             new_shape = 6
-        elif shape == 5:
+            new_color_indice = 5  # Garde la couleur noire
+        elif shape == 5:  # triangle en haut à gauche -> triangle en bas à droite
             new_shape = 3
-        elif shape == 6:
+            new_color_indice = 5  # Garde la couleur noire
+        elif shape == 6:  # triangle en bas à gauche -> triangle en haut à droite
             new_shape = 4
+            new_color_indice = 5  # Garde la couleur noire
+            
         return new_shape, new_color_indice
 
 

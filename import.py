@@ -41,21 +41,26 @@ class ImageProcessorApp:
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
 
-        # Add widgets to the options frame
-        self.add_option(options_frame, "Grid Width:", self.grid_width, 1, 1, 200, self.update_grid_width)
-        self.add_option(options_frame, "Grid Height:", self.grid_height, 3, 1, 200, self.update_grid_height)
-        ttk.Checkbutton(options_frame, text="Sync Grid Dimensions", variable=self.sync_grid_dimensions).grid(row=5, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
-        self.add_option(options_frame, "Triangle Ratio:", self.triangle_ratio, 6, 0.0, 1.0, self.update_parameters)
-        self.add_option(options_frame, "Threshold:", self.threshold, 8, 0, 256, self.update_parameters)
-        ttk.Checkbutton(options_frame, text="Display Cells", variable=self.display_cells, command=self.update_parameters).grid(row=10, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
-        self.add_option(options_frame, "Display Cells Scale Reduce:", self.display_cells_scale_reduce, 11, 1, 50, self.update_parameters)
-        self.add_option(options_frame, "Model ASCII:", self.model_ascii, 14, 1, 4, self.update_parameters)
+        # Add buttons at the top with uniform style
+        button_style = {'width': 20, 'padding': 5}
+        ttk.Button(options_frame, text="Load Image...", command=self.browse_image, **button_style).grid(row=0, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save bid file...", command=self.class_ImageProcessor.save_bid, **button_style).grid(row=1, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save image file...", command=self.browse_image, **button_style).grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Save ASCII file...", command=self.class_ImageProcessor.save_ascii, **button_style).grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+        ttk.Button(options_frame, text="Reset to Default", command=self.reset_to_default, **button_style).grid(row=4, column=0, columnspan=2, padx=10, pady=5)
 
-        ttk.Button(options_frame, text="Reset to Default", command=self.reset_to_default).grid(row=17, column=0, columnspan=3, padx=10, pady=5)
-        ttk.Button(options_frame, text="Load Image...", command=self.browse_image).grid(row=18, column=0, columnspan=2, padx=10, pady=5)
-        ttk.Button(options_frame, text="Save bid file...", command=self.class_ImageProcessor.save_bid).grid(row=19, column=0, columnspan=2, padx=10, pady=5)
-        ttk.Button(options_frame, text="Save image file...", command=self.browse_image).grid(row=20, column=0, columnspan=2, padx=10, pady=5)
-        ttk.Button(options_frame, text="Save ASCII file...", command=self.class_ImageProcessor.save_ascii).grid(row=21, column=0, columnspan=2, padx=10, pady=5)
+        # Add a separator after buttons
+        ttk.Separator(options_frame, orient='horizontal').grid(row=5, column=0, columnspan=2, sticky='ew', padx=10, pady=10)
+
+        # Add widgets to the options frame
+        self.add_option(options_frame, "Grid Width:", self.grid_width, 6, 1, 200, self.update_grid_width)
+        self.add_option(options_frame, "Grid Height:", self.grid_height, 8, 1, 200, self.update_grid_height)
+        ttk.Checkbutton(options_frame, text="Sync Grid Dimensions", variable=self.sync_grid_dimensions).grid(row=10, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
+        self.add_option(options_frame, "Triangle Ratio:", self.triangle_ratio, 11, 0.0, 1.0, self.update_parameters)
+        self.add_option(options_frame, "Threshold:", self.threshold, 13, 0, 256, self.update_parameters)
+        ttk.Checkbutton(options_frame, text="Display Cells", variable=self.display_cells, command=self.update_parameters).grid(row=15, column=0, columnspan=2, sticky=ttk.W, padx=10, pady=5)
+        self.add_option(options_frame, "Display Cells Scale Reduce:", self.display_cells_scale_reduce, 16, 1, 50, self.update_parameters)
+        self.add_option(options_frame, "Model ASCII:", self.model_ascii, 18, 1, 4, self.update_parameters)
 
         # Add the canvas to the canvas frame
         self.canvas = ttk.Canvas(canvas_frame, width=1024, height=1024, border=2)
