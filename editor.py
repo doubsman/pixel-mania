@@ -191,6 +191,7 @@ class ImageEditorApp(BidFile, ActionState):
         rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
         inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
         fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
+        grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
         
         self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)", foreground="blue")
         self.mode_copy.pack(side="bottom")
@@ -676,7 +677,6 @@ class ImageEditorApp(BidFile, ActionState):
 
     def draw_canvas(self, event):
         self.save_state()
-        self.bool_backup = True
         self.grid_bid[self.grid_y][self.grid_x] = self.current_select_shape
         self.grid_colors[self.grid_y][self.grid_x] = self.current_select_color
         self.draw_cell(self.grid_x, self.grid_y, self.current_select_shape, self.current_select_color)
@@ -849,8 +849,6 @@ class ImageEditorApp(BidFile, ActionState):
     def paste_cells_on_canvas(self, event):
         if self.bool_paste_mode:
             self.save_state()
-            self.bool_backup = True
-            
             grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
             grid_clipboard_y = int((self.clipboard.max_y - self.clipboard.min_y)/2)
             for cell in self.grid_clipboard:
@@ -919,6 +917,20 @@ class ImageEditorApp(BidFile, ActionState):
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
             self.refresh_image()
 
+    def gradient_cells(self):
+        if len(self.canvas.gettags("cell_select")) > 0:
+            self.save_state()
+            min_x, max_x, min_y, max_y = self._get_selection_bounds()
+            width = (max_x - min_x + 1)
+            for y in range(self.grid_height):
+                for x in range(self.grid_width):
+                    if self.grid_sel_cells[y, x] == 1:
+                        color_value = int((x - min_x) / width * 6)
+                        self.grid_bid[y, x] = 1
+                        self.grid_colors[y, x] = color_value
+                        self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
+            self.refresh_image()
+
     def draw_grill(self):
         if not self.bool_grid:
             width_image = self.grid_width * self.image_scale
@@ -951,6 +963,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.restore_state()
 
     def save_state(self):
+        self.bool_backup = True
         self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
 
     def restore_state(self):

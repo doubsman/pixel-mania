@@ -5,7 +5,7 @@ from img2ascii import img_2_ascii
 import numpy as np
 
 
-GRAY_SCALE = {
+GRAY_SCALE_DRAW = {
     0: (255, 255, 255),  # Blanc
     1: (220, 220, 220),  # Gris très clair
     2: (192, 192, 192),  # Gris clair

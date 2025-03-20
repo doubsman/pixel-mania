@@ -279,6 +279,12 @@ class BidCarrousel(ttk.Frame):
         self.frame = ttk.Frame(self)
         self.frame.pack(fill=tk.BOTH, expand=True)
         
+        # Create the search bar
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("w", self.update_search)
+        self.search_entry = ttk.Entry(self.frame, textvariable=self.search_var)
+        self.search_entry.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        
         # Create the canvas for the thumbnails
         self.canvas = tk.Canvas(self.frame, bg='#E0E0E0')
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -310,18 +316,6 @@ class BidCarrousel(ttk.Frame):
         # Force the update of the scroll region after a short delay
         self.parent.after(100, self.update_scroll_region)
         
-        # Bind the window closing event
-        self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
-        
-    def on_closing(self):
-        """Handle window closing"""
-        # Stop the loading thread
-        self.is_loading = False
-        # Clean the bindings
-        self.canvas.unbind_all("<MouseWheel>")
-        # Destroy the window
-        self.parent.destroy()
-        
     def start_thumbnail_loader(self):
         """Start the thumbnail loading thread"""
         self.is_loading = True
@@ -335,17 +329,12 @@ class BidCarrousel(ttk.Frame):
             try:
                 # Get a task from the queue
                 bid_file = self.loading_queue.get(timeout=0.1)
-                if not self.is_loading:  # Check again after getting the task
-                    break
                 self.create_thumbnail(bid_file)
                 self.loading_queue.task_done()
                 # Small delay to avoid overloading the CPU
                 time.sleep(0.1)
             except queue.Empty:
                 continue
-            except Exception as e:
-                print(f"Error in thumbnail loader: {e}")
-                break
             
     def load_bids(self):
         """Charge tous les fichiers .bid du dossier"""
@@ -379,27 +368,19 @@ class BidCarrousel(ttk.Frame):
         # Add files to the loading queue
         for bid_file in self.bid_files:
             self.loading_queue.put(bid_file)
-            
+        
+        # Update the search to filter the initial thumbnails
+        self.update_search()
+        
     def create_thumbnail(self, bid_file):
         """Create a thumbnail for a .bid file"""
         # Search for the corresponding PNG file
-        png_file = bid_file.replace('.bid', '')
-        png_path = None
+        grid_bid = np.genfromtxt(os.path.join(self.bid_dir, bid_file), delimiter=1, dtype=int, ndmin=2)
+        grid_width = len(grid_bid[0])
+        grid_height = int(grid_bid.size / grid_width)
+        png_file = bid_file.replace('.bid', f'_{grid_width}x{grid_height}.png')
+        png_path = os.path.join(self.bid_dir, png_file)
         
-        # Search for the PNG file with the dimensions
-        for f in os.listdir(self.bid_dir):
-            if f.startswith(png_file) and f.endswith('.png'):
-                # Prefer the file that matches exactly the bid name without dimensions
-                if f == f"{png_file}.png":
-                    png_path = os.path.join(self.bid_dir, f)
-                    break
-                # If no exact match, take the first matching file
-                elif png_path is None:
-                    png_path = os.path.join(self.bid_dir, f)
-                
-        if not png_path:
-            return
-            
         # Load the image
         try:
             thumbnail = Image.open(png_path)
@@ -449,6 +430,19 @@ class BidCarrousel(ttk.Frame):
         # Update the scroll region
         self.parent.after(100, self.update_scroll_region)
         
+    def update_search(self, *args):
+        """Update the displayed thumbnails based on the search query"""
+        search_query = self.search_var.get().lower()
+        for thumb_frame, photo in self.thumbnails:
+            bid_file = thumb_frame.winfo_children()[1].cget("text")
+            if search_query in bid_file.lower():
+                thumb_frame.grid()
+            else:
+                thumb_frame.grid_remove()
+        
+        # Update the scroll region
+        self.update_scroll_region()
+        
     def on_frame_configure(self, event=None):
         """Configure the scroll region of the canvas"""
         # Update the scroll region
@@ -466,8 +460,6 @@ class BidCarrousel(ttk.Frame):
         
     def on_click(self, bid_file):
         """Handle the click on a thumbnail"""
-        # Stop the loading thread before closing
-        self.is_loading = False
         if self.callback:
             self.callback(bid_file)
             
@@ -485,7 +477,6 @@ class BidCarrousel(ttk.Frame):
         self.canvas.itemconfig(self.canvas_window, width=max(bbox, self.canvas.winfo_width()))
         
     def destroy(self):
-        """Clean up resources when the widget is destroyed"""
         # Stop the loading thread
         self.is_loading = False
         # Clean the bindings
@@ -501,4 +492,4 @@ if __name__ == '__main__':
         print("Selected symbol:", symbol)
     
     carrousel = SymbolCarrousel(root, callback=on_symbol_selected)
-    root.mainloop() 
+    root.mainloop()
