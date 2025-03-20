@@ -13,6 +13,8 @@ from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
 import sys
 import logging
+from class_carrousel import SymbolCarrousel
+from class_carrousel import BidCarrousel
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
@@ -151,37 +153,44 @@ class ImageEditorApp(BidFile, ActionState):
         ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
 
+        opencar_button = self.create_button(left_frame, 'ico/openbid.png', self.open_carousselbid, "open")
         open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
-        new_button = self.create_button(left_frame2, 'ico/plus.png', self.create_bid, "New")
         save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
-        saveas_button = self.create_button(left_frame2, 'ico/saveas.png', self.saveas_bid, "Save bid")
-        magic_button = self.create_button(left_frame, 'ico/magic.png', self.mode_magicselect, "Select Magic")
-        undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
-        select_button = self.create_button(left_frame, 'ico/selection.png', self.mode_select, "Select Cells")
-        area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Select Area")
+        saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
+        new_button = self.create_button(left_frame, 'ico/plus.png', self.create_bid, "New")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
         copy_button = self.create_button(left_frame, 'ico/copy.png', self.copy_cells, "Copy")
-        paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
         cut_button = self.create_button(left_frame, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
-        filpv_button = self.create_button(left_frame, 'ico/flip-v.png', self.flipv_cells, "Flip V")
-        filph_button = self.create_button(left_frame, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_l_button = self.create_button(left_frame, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
-        rotate_r_button = self.create_button(left_frame, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
-        inverse_button = self.create_button(left_frame, 'ico/inverser.png', self.inverse_colors, "Grid")
-        fill_button = self.create_button(left_frame, 'ico/fill.png', self.fill_cells, "Grid")
+        paste_button = self.create_button(left_frame, 'ico/paste.png', self.paste_cells, "Cut")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
-        ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save Image")
-        imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Save Image")
-        folder_button = self.create_button(left_frame, 'ico/folder.png', self.open_folder, "Save Image")
-        
-        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
+        ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=6)
+        imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
+        folder_button = self.create_button(left_frame, 'ico/open.png', self.open_folder, "Open Folder")
+
+        undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
+        select_button = self.create_button(left_frame2, 'ico/selection.png', self.mode_select, "Cell Selecion")
+        area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Area Selecion")
+        magic_button = self.create_button(left_frame2, 'ico/magic.png', self.mode_magicselect, "Magic Selecion")
+
         color_icon = ttk.PhotoImage(file='ico/invent.png')
         self.palet = ttk.Canvas(left_frame2, width=50, height=500, bg='#E0E0E0')
         self.palet.create_image(0, 0, anchor="nw", image=color_icon)
         self.palet.image = color_icon
-        self.palet.pack()
+        self.palet.pack(pady=5)
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
+        
+        filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
+        rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
+        rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
+        inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
+        fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
         
         self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)", foreground="blue")
         self.mode_copy.pack(side="bottom")
@@ -195,17 +204,17 @@ class ImageEditorApp(BidFile, ActionState):
 
         save_symbol = self.create_button(left_frame, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
-        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.clear_grid_clipboard, "Save Symbol", 'bottom', 25)
+        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.clear_grid_clipboard, "Reset Symbol", 'bottom', 25)
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
         self.outercanvas.pack(expand="y", fill="y")
 
-        # Créer un frame pour contenir le canvas et les scrollbars
+        # Create a frame to contain the canvas and scrollbars
         self.canvas_frame = Frame(self.outercanvas)
         self.outercanvas.create_window(50, 50, window=self.canvas_frame, anchor="nw")
 
-        # Créer les scrollbars
+        # Create the scrollbars
         self.v_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical")
         self.h_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="horizontal")
         self.canvas = ttk.Canvas(self.canvas_frame, width=self.WIDTH, height=self.HEIGHT,
@@ -248,13 +257,71 @@ class ImageEditorApp(BidFile, ActionState):
         return button
 
     def open_bid(self):
-        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
+        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")], initialdir="wrk")
         if bid_path != '':
             self.save_bid()
             self.file_path = bid_path
             self.root.title(f'{self.tittle} [{self.file_path}]')  
             self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
+            self.init_bid()      
+
+    def open_carousselbid(self):
+        # make modal window
+        dialog = ttk.Toplevel(self.root)
+        dialog.title("Open Bid File")
+        icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
+        dialog.iconphoto(False, icon)
+        dialog.geometry("733x567")
+        dialog.transient(self.root)  # make the window modal
+        dialog.grab_set()  # force focus on this window
+        dialog.resizable(width=False, height=True)
+        # Configure the window expansion
+        dialog.grid_rowconfigure(0, weight=1)
+        dialog.grid_columnconfigure(0, weight=1)
+        
+        # create carrousel
+        def on_bid_selected(bid_file):
+            self.save_bid()
+            self.file_path = bid_file
+            self.root.title(f'{self.tittle} [{self.file_path}]')  
+            self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
             self.init_bid()
+            dialog.destroy()
+            
+        carrousel = BidCarrousel(dialog, callback=on_bid_selected)
+        carrousel.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        
+        # Position the window next to the mouse
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        
+        # Get the mouse position
+        mouse_x = self.root.winfo_pointerx()
+        mouse_y = self.root.winfo_pointery()
+        
+        # Calculate the window position
+        x = mouse_x + 20  # 20 pixels to the right of the mouse
+        y = mouse_y - height // 2  # Centered vertically relative to the mouse
+        
+        # Ensure the window stays within the screen boundaries
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        if x + width > screen_width:
+            x = mouse_x - width - 20  # Place to the left of the mouse if not enough space on the right
+        if y < 0:
+            y = 0  # Align to the top if not enough space above
+        if y + height > screen_height:
+            y = screen_height - height  # Align to the bottom if not enough space below
+            
+        dialog.geometry(f'+{x}+{y}')
+        
+        # Define a minimum size for the window
+        dialog.minsize(733,567)
+        
+        # Wait for the window to be closed
+        dialog.wait_window()
 
     def create_bid(self):
         self.save_bid()
@@ -311,11 +378,54 @@ class ImageEditorApp(BidFile, ActionState):
             subprocess.Popen(fr'explorer "{open_path}"')
 
     def open_grid_clipboard(self):
-        path_symbol = filedialog.askopenfilename(title="Open Symbol File", filetypes=[("Symbol Files", "*.sym")], initialdir='./sym')
-        if os.path.isfile(path_symbol):
-            self.grid_clipboard = self.clipboard.load_symbol(path_symbol)
+        # make modal window
+        dialog = ttk.Toplevel(self.root)
+        dialog.title("Load Symbol")
+        icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
+        dialog.iconphoto(False, icon)
+        dialog.geometry("772x280")
+        dialog.resizable(width=False, height=False)
+        dialog.transient(self.root)  # modal windows
+        dialog.grab_set()  # force focus on this window
+        
+        # create carrousel
+        def on_symbol_selected(symbol):
+            self.grid_clipboard = symbol
+            self.clipboard.insert_symbol(symbol)  # Update clipboard with new symbol
             self.refresh_thumbnail()
             self.paste_cells()
+            dialog.destroy()
+            
+        carrousel = SymbolCarrousel(dialog, callback=on_symbol_selected)
+        
+        # Position the window next to the mouse
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        
+        # Get the mouse position
+        mouse_x = self.root.winfo_pointerx()
+        mouse_y = self.root.winfo_pointery()
+        
+        # Calculate the window position
+        x = mouse_x + 20  # 20 pixels to the right of the mouse
+        y = mouse_y - height // 2  # Centered vertically relative to the mouse
+        
+        # Ensure the window stays within the screen boundaries
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        
+        if x + width > screen_width:
+            x = mouse_x - width - 20  # Place to the left of the mouse if not enough space on the right
+        if y < 0:
+            y = 0  # Align to the top if not enough space above
+        if y + height > screen_height:
+            y = screen_height - height  # Align to the bottom if not enough space below
+            
+        dialog.geometry(f'+{x}+{y}')
+        
+        # Wait for the window to be closed
+        dialog.wait_window()
 
     def save_grid_clipboard(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
@@ -557,6 +667,8 @@ class ImageEditorApp(BidFile, ActionState):
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        self.canvas.delete("cell_select")
         self.canvas.unbind("<ButtonPress-1>")
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.unbind("<B1-Motion>")
