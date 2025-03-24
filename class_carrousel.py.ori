@@ -274,24 +274,16 @@ class BidCarrousel(ttk.Frame):
         self.thumbnail_size = 100
         self.loading_queue = queue.Queue()
         self.is_loading = False
-        self.all_bid_files = []  # Store all bid files
-        self.filtered_bid_files = []  # Store filtered bid files
-        self.loader_thread = None  # Store the loader thread reference
-        self.no_files_label = None  # Store reference to the no files label
         
         # Create the main container
         self.frame = ttk.Frame(self)
         self.frame.pack(fill=tk.BOTH, expand=True)
         
-        # Create the search frame
-        self.search_frame = ttk.Frame(self.frame)
-        self.search_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
-        
-        # Create the search entry
+        # Create the search bar
         self.search_var = tk.StringVar()
-        self.search_var.trace('w', self.filter_files)  # Call filter_files when text changes
-        self.search_entry = ttk.Entry(self.search_frame, textvariable=self.search_var)
-        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.search_var.trace_add("w", self.update_search)
+        self.search_entry = ttk.Entry(self.frame, textvariable=self.search_var)
+        self.search_entry.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
         
         # Create the canvas for the thumbnails
         self.canvas = tk.Canvas(self.frame, bg='#E0E0E0')
@@ -324,132 +316,62 @@ class BidCarrousel(ttk.Frame):
         # Force the update of the scroll region after a short delay
         self.parent.after(100, self.update_scroll_region)
         
-        # Bind the window closing event
-        self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
-        
-    def stop_thumbnail_loader(self):
-        """Stop the thumbnail loading thread and clear the queue"""
-        if self.is_loading:
-            self.is_loading = False
-            # Clear the queue
-            while not self.loading_queue.empty():
-                try:
-                    self.loading_queue.get_nowait()
-                except queue.Empty:
-                    break
-            # Wait for the thread to finish
-            if self.loader_thread and self.loader_thread.is_alive():
-                self.loader_thread.join(timeout=1.0)
-
     def start_thumbnail_loader(self):
         """Start the thumbnail loading thread"""
-        self.stop_thumbnail_loader()  # Stop any existing loader
         self.is_loading = True
         self.loader_thread = threading.Thread(target=self.thumbnail_loader_worker)
         self.loader_thread.daemon = True
         self.loader_thread.start()
         
-    def filter_files(self, *args):
-        """Filter files based on search text"""
-        search_text = self.search_var.get().lower()
-        
-        # Stop current loading and clear thumbnails
-        self.stop_thumbnail_loader()
-        
-        # Clear existing thumbnails
-        for thumb_frame, photo in self.thumbnails:
-            thumb_frame.destroy()
-        self.thumbnails.clear()
-        
-        # Remove existing no_files_label if it exists
-        if self.no_files_label:
-            self.no_files_label.destroy()
-            self.no_files_label = None
-        
-        # Filter files
-        self.filtered_bid_files = [f for f in self.all_bid_files if search_text in f.lower()]
-        
-        # Update the window title with the number of filtered elements
-        self.parent.title(f"Open Bid File [{len(self.filtered_bid_files)}]")
-        
-        if not self.filtered_bid_files:
-            # Display a message if no files match the search
-            self.no_files_label = ttk.Label(self.thumbnails_frame, 
-                                          text="No matching .bid files found",
-                                          font=('Arial', 12))
-            self.no_files_label.grid(row=0, column=0, pady=20)
-            self.thumbnails_frame.grid_columnconfigure(0, weight=1)
-            return
-            
-        # Add filtered files to the loading queue
-        for bid_file in self.filtered_bid_files:
-            self.loading_queue.put(bid_file)
-            
-        # Restart the thumbnail loader
-        self.start_thumbnail_loader()
-            
-        # Update the scroll region
-        self.update_scroll_region()
-
-    def load_bids(self):
-        """Charge tous les fichiers .bid du dossier"""
-        if not os.path.exists(self.bid_dir):
-            os.makedirs(self.bid_dir)
-            
-        # Get all .bid files with their modification date
-        self.all_bid_files = []
-        for f in os.listdir(self.bid_dir):
-            if f.endswith('.bid'):
-                path = os.path.join(self.bid_dir, f)
-                mtime = os.path.getmtime(path)
-                self.all_bid_files.append((f, mtime))
-        
-        # Sort by modification date (most recent first)
-        self.all_bid_files.sort(key=lambda x: x[1], reverse=True)
-        self.all_bid_files = [f[0] for f in self.all_bid_files]
-        
-        # Initialize filtered files with all files
-        self.filtered_bid_files = self.all_bid_files.copy()
-        
-        # Update the window title with the number of elements
-        self.parent.title(f"Open Bid File [{len(self.all_bid_files)}]")
-        
-        # Remove existing no_files_label if it exists
-        if self.no_files_label:
-            self.no_files_label.destroy()
-            self.no_files_label = None
-        
-        if not self.all_bid_files:
-            # Display a message if no files are found
-            self.no_files_label = ttk.Label(self.thumbnails_frame, 
-                                          text="No .bid files found in the 'bid' directory",
-                                          font=('Arial', 12))
-            self.no_files_label.grid(row=0, column=0, pady=20)
-            self.thumbnails_frame.grid_columnconfigure(0, weight=1)
-            return
-            
-        # Add files to the loading queue
-        for bid_file in self.filtered_bid_files:
-            self.loading_queue.put(bid_file)
-            
     def thumbnail_loader_worker(self):
         """Worker thread to load thumbnails asynchronously"""
         while self.is_loading:
             try:
                 # Get a task from the queue
                 bid_file = self.loading_queue.get(timeout=0.1)
-                if not self.is_loading:  # Check again after getting the task
-                    break
                 self.create_thumbnail(bid_file)
                 self.loading_queue.task_done()
                 # Small delay to avoid overloading the CPU
                 time.sleep(0.1)
             except queue.Empty:
                 continue
-            except Exception as e:
-                print(f"Error in thumbnail loader: {e}")
-                break
             
+    def load_bids(self):
+        """Charge tous les fichiers .bid du dossier"""
+        if not os.path.exists(self.bid_dir):
+            os.makedirs(self.bid_dir)
+            
+        # Get all .bid files with their modification date
+        self.bid_files = []
+        for f in os.listdir(self.bid_dir):
+            if f.endswith('.bid'):
+                path = os.path.join(self.bid_dir, f)
+                mtime = os.path.getmtime(path)
+                self.bid_files.append((f, mtime))
+        
+        # Sort by modification date (most recent first)
+        self.bid_files.sort(key=lambda x: x[1], reverse=True)
+        self.bid_files = [f[0] for f in self.bid_files]
+        
+        # Update the window title with the number of elements
+        self.parent.title(f"Open Bid File [{len(self.bid_files)}]")
+        
+        if not self.bid_files:
+            # Display a message if no files are found
+            no_files_label = ttk.Label(self.thumbnails_frame, 
+                                     text="No .bid files found in the 'bid' directory",
+                                     font=('Arial', 12))
+            no_files_label.grid(row=0, column=0, pady=20)
+            self.thumbnails_frame.grid_columnconfigure(0, weight=1)
+            return
+            
+        # Add files to the loading queue
+        for bid_file in self.bid_files:
+            self.loading_queue.put(bid_file)
+        
+        # Update the search to filter the initial thumbnails
+        self.update_search()
+        
     def create_thumbnail(self, bid_file):
         """Create a thumbnail for a .bid file"""
         # Search for the corresponding PNG file
@@ -458,7 +380,7 @@ class BidCarrousel(ttk.Frame):
         grid_height = int(grid_bid.size / grid_width)
         png_file = bid_file.replace('.bid', f'_{grid_width}x{grid_height}.png')
         png_path = os.path.join(self.bid_dir, png_file)
-            
+        
         # Load the image
         try:
             thumbnail = Image.open(png_path)
@@ -508,6 +430,19 @@ class BidCarrousel(ttk.Frame):
         # Update the scroll region
         self.parent.after(100, self.update_scroll_region)
         
+    def update_search(self, *args):
+        """Update the displayed thumbnails based on the search query"""
+        search_query = self.search_var.get().lower()
+        for thumb_frame, photo in self.thumbnails:
+            bid_file = thumb_frame.winfo_children()[1].cget("text")
+            if search_query in bid_file.lower():
+                thumb_frame.grid()
+            else:
+                thumb_frame.grid_remove()
+        
+        # Update the scroll region
+        self.update_scroll_region()
+        
     def on_frame_configure(self, event=None):
         """Configure the scroll region of the canvas"""
         # Update the scroll region
@@ -525,8 +460,6 @@ class BidCarrousel(ttk.Frame):
         
     def on_click(self, bid_file):
         """Handle the click on a thumbnail"""
-        # Stop the loading thread before closing
-        self.is_loading = False
         if self.callback:
             self.callback(bid_file)
             
@@ -543,14 +476,12 @@ class BidCarrousel(ttk.Frame):
         bbox = self.thumbnails_frame.winfo_reqwidth()
         self.canvas.itemconfig(self.canvas_window, width=max(bbox, self.canvas.winfo_width()))
         
-    def on_closing(self):
-        """Handle window closing"""
+    def destroy(self):
         # Stop the loading thread
-        self.stop_thumbnail_loader()
+        self.is_loading = False
         # Clean the bindings
         self.canvas.unbind_all("<MouseWheel>")
-        # Destroy the window
-        self.parent.destroy()
+        super().destroy()
 
 if __name__ == '__main__':
     root = tk.Tk()
@@ -561,4 +492,4 @@ if __name__ == '__main__':
         print("Selected symbol:", symbol)
     
     carrousel = SymbolCarrousel(root, callback=on_symbol_selected)
-    root.mainloop() 
+    root.mainloop()

@@ -169,7 +169,7 @@ class ImageEditorApp(BidFile, ActionState):
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=6)
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII")
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
+                                                                                                      
         folder_button = self.create_button(left_frame, 'ico/open.png', self.open_folder, "Open Folder")
 
         undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
@@ -185,6 +185,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
+        rectangle_button = self.create_button(left_frame2, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
         filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
         filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
         rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
@@ -272,7 +273,7 @@ class ImageEditorApp(BidFile, ActionState):
         dialog.title("Open Bid File")
         icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
         dialog.iconphoto(False, icon)
-        dialog.geometry("733x567")
+        dialog.geometry("890x800")
         dialog.transient(self.root)  # make the window modal
         dialog.grab_set()  # force focus on this window
         dialog.resizable(width=False, height=True)
@@ -682,6 +683,39 @@ class ImageEditorApp(BidFile, ActionState):
         self.draw_cell(self.grid_x, self.grid_y, self.current_select_shape, self.current_select_color)
         self.refresh_image()
 
+    def draw_rectangle(self):
+        self.bool_paste_mode = False
+        if self.image_over_id !=0:
+            self.canvas.delete(self.image_over_id)
+            self.image_over_id = 0
+        self.canvas.unbind("<Button-1>")
+        self.canvas.bind("<ButtonPress-1>", self.start_selection)
+        self.canvas.bind("<B1-Motion>", self.update_selection)
+        self.canvas.bind("<ButtonRelease-1>", self.end_selection_rectangle)
+    
+    def end_selection_rectangle(self, event):
+        """End the selection rectangle and draw the rectangle."""
+        self.selection_end = (event.x, event.y)
+        # Get the grid coordinates for start and end points
+        start_x = min(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        start_y = min(self.selection_start[1], self.selection_end[1]) // self.image_scale
+        end_x = max(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        end_y = max(self.selection_start[1], self.selection_end[1]) // self.image_scale
+        # Save state for undo
+        self.save_state()
+        # Draw the rectangle
+        for y in range(start_y, end_y + 1):
+            for x in range(start_x, end_x + 1):
+                # Only draw on the edges for a rectangle
+                if (x == start_x or x == end_x or y == start_y or y == end_y):
+                    self.grid_bid[y, x] = self.current_select_shape
+                    self.grid_colors[y, x] = self.current_select_color
+                    self.draw_cell(x, y, self.current_select_shape, self.current_select_color)
+        # Refresh the image
+        self.refresh_image()
+        # Remove the selection rectangle
+        self.canvas.delete("selection_rect")
+
     def mode_area(self):
         self.bool_paste_mode = False
         if self.image_over_id !=0:
@@ -691,6 +725,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<ButtonPress-1>", self.start_selection)
         self.canvas.bind("<B1-Motion>", self.update_selection)
         self.canvas.bind("<ButtonRelease-1>", self.end_selection)
+
 
     def start_selection(self, event):
         """Start the selection rectangle."""
