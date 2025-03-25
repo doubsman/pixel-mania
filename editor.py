@@ -60,15 +60,15 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Image Bid Editor v1.00beta"
+        self.tittle = "Image Bid Editor v1.00rc1"
         self.root.title(self.tittle)
-        self.root.geometry("1700x1520")
+        self.root.geometry("1800x1520")
         self.root.resizable(width=False, height=False)
         
         # Intercept window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        self.WIDTH = 1700-200-100
+        self.WIDTH = 1800-300-100
         self.HEIGHT = 1520-20-100
         self.file_path = ""
         # Canvas Grid Mode
@@ -129,84 +129,86 @@ class ImageEditorApp(BidFile, ActionState):
         left_frame['borderwidth'] = 5
         left_frame.pack(side="left", fill="y")
 
-        left_frame2 = ttk.Frame(self.root)
-        left_frame2['borderwidth'] = 5
-        left_frame2.pack(side="left", fill="y")
-
-        # Width frame
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=5)
         width_frame = ttk.Frame(left_frame)
         width_frame.pack()
         ttk.Button(width_frame, text="-", command=lambda: self.change_size('width', -2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         self.grid_width_label = ttk.Label(width_frame, text="48")
         self.grid_width_label.pack(side="left", padx=2, pady=0)
         ttk.Button(width_frame, text="+", command=lambda: self.change_size('width', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=5)
 
-        # Frame for height
-        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
-        height_frame = ttk.Frame(left_frame2)
+        height_frame = ttk.Frame(left_frame)
         height_frame.pack()
         ttk.Button(height_frame, text="-", command=lambda: self.change_size('height', -2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         self.grid_height_label = ttk.Label(height_frame, text="48")
         self.grid_height_label.pack(side="left", padx=2, pady=0)
         ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
-        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5)
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
 
         opencar_button = self.create_button(left_frame, 'ico/openbid.png', self.open_carousselbid, "open")
         open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
         save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
         saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
         new_button = self.create_button(left_frame, 'ico/plus.png', self.create_bid, "New")
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
-        copy_button = self.create_button(left_frame, 'ico/copy.png', self.copy_cells, "Copy")
-        cut_button = self.create_button(left_frame, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
-        paste_button = self.create_button(left_frame, 'ico/paste.png', self.paste_cells, "Cut")
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
-        grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid")
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=6)
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII")
         folder_button = self.create_button(left_frame, 'ico/open.png', self.open_folder, "Open Folder")
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
+        grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid")
+
+        self.coord_label = ttk.Label(left_frame, text="(00, 00)")
+        self.coord_label.pack(side="bottom")
+
+        left_frame2 = ttk.Frame(self.root)
+        left_frame2['borderwidth'] = 5
+        left_frame2.pack(side="left", fill="y")
 
         undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
         select_button = self.create_button(left_frame2, 'ico/selection.png', self.mode_select, "Cell Selecion")
         area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Area Selecion")
         magic_button = self.create_button(left_frame2, 'ico/magic.png', self.mode_magicselect, "Magic Selecion")
+        copy_button = self.create_button(left_frame2, 'ico/copy.png', self.copy_cells, "Copy")
+        cut_button = self.create_button(left_frame2, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
+        paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
+        fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
+        grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
+
+        self.size_clipboard_label = ttk.Label(left_frame2, text="00 x 00")
+        self.size_clipboard_label.pack(side="bottom")
+
+        save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
+        load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
+        init_symbol = self.create_button(left_frame2, 'ico/cross.png', self.clear_grid_clipboard, "Reset Symbol", 'bottom', 25)
+
+        left_frame3 = ttk.Frame(self.root)
+        left_frame3['borderwidth'] = 5
+        left_frame3.pack(side="left", fill="y")
+
+        drawline_button = self.create_button(left_frame3, 'ico/line.png', self.draw_line, "Draw Line")
+        rectangle_button = self.create_button(left_frame3, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
+        circle_button = self.create_button(left_frame3, 'ico/circle.png', self.draw_circle, "Draw Circle")
 
         color_icon = ttk.PhotoImage(file='ico/invent.png')
-        self.palet = ttk.Canvas(left_frame2, width=50, height=500, bg='#E0E0E0')
+        self.palet = ttk.Canvas(left_frame3, width=50, height=500, bg='#E0E0E0')
         self.palet.create_image(0, 0, anchor="nw", image=color_icon)
         self.palet.image = color_icon
         self.palet.pack(pady=5)
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
-        drawline_button = self.create_button(left_frame2, 'ico/line.png', self.draw_line, "Draw Line")
-        rectangle_button = self.create_button(left_frame2, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
-        filpv_button = self.create_button(left_frame, 'ico/flip-v.png', self.flipv_cells, "Flip V")
-        filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_l_button = self.create_button(left_frame, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
-        rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
-        inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
-        fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
-        grad_button = self.create_button(left_frame, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
+        filpv_button = self.create_button(left_frame3, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        filph_button = self.create_button(left_frame3, 'ico/flip-h.png', self.fliph_cells, "Flip H")
+        rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
+        rotate_r_button = self.create_button(left_frame3, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
+        inverse_button = self.create_button(left_frame3, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
         
-        self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)", foreground="blue")
+        self.mode_copy = ttk.Label(left_frame3, text="SUB (✖)", foreground="blue")
         self.mode_copy.pack(side="bottom")
 
-        self.thumbnail_canvas = ttk.Canvas(left_frame2, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
+        self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
         self.thumbnail_canvas.pack(side="bottom", fill="y")
         self.thumbnail_canvas.pack_propagate(False)
-
-        self.coord_label = ttk.Label(left_frame, text="(00, 00)")
-        self.coord_label.pack(side="bottom")
-
-        save_symbol = self.create_button(left_frame, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
-        load_symbol = self.create_button(left_frame, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
-        init_symbol = self.create_button(left_frame, 'ico/cross.png', self.clear_grid_clipboard, "Reset Symbol", 'bottom', 25)
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
@@ -442,6 +444,7 @@ class ImageEditorApp(BidFile, ActionState):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = []
             self.refresh_thumbnail()
+            self.size_clipboard_label.config(text="00 x 00")
 
     def display_console_bid(self):
         file_ascii = self.file_path.replace('.bid','.ascii')
@@ -785,6 +788,88 @@ class ImageEditorApp(BidFile, ActionState):
         # Remove the selection rectangle
         self.canvas.delete("selection_rect")
 
+    def draw_circle(self):
+        """Enable circle drawing mode"""
+        self.bool_paste_mode = False
+        if self.image_over_id != 0:
+            self.canvas.delete(self.image_over_id)
+            self.image_over_id = 0
+        self.canvas.unbind("<Button-1>")
+        self.canvas.bind("<ButtonPress-1>", self.start_circle)
+        self.canvas.bind("<B1-Motion>", self.update_circle)
+        self.canvas.bind("<ButtonRelease-1>", self.end_circle)
+
+    def start_circle(self, event):
+        """Start drawing a circle"""
+        self.selection_start = (event.x, event.y)
+        self.selection_end = (event.x, event.y)
+        # Create a temporary circle (oval) that will be updated while drawing
+        self.selection_rect = self.canvas.create_oval(
+            self.selection_start[0], self.selection_start[1],
+            self.selection_end[0], self.selection_end[1],
+            outline="blue", dash=(4, 4), tags="selection_rect"
+        )
+
+    def update_circle(self, event):
+        """Update the circle while drawing"""
+        self.selection_end = (event.x, event.y)
+        # Calculate the radius based on the distance between start and current point
+        radius = ((self.selection_end[0] - self.selection_start[0])**2 + 
+                 (self.selection_end[1] - self.selection_start[1])**2)**0.5
+        # Update the circle coordinates
+        self.canvas.coords(
+            self.selection_rect,
+            self.selection_start[0] - radius, self.selection_start[1] - radius,
+            self.selection_start[0] + radius, self.selection_start[1] + radius
+        )
+
+    def end_circle(self, event):
+        """Finish drawing the circle and apply it to the grid"""
+        self.selection_end = (event.x, event.y)
+        self.save_state()
+        
+        # Get center point and radius in grid coordinates
+        center_x = int(self.selection_start[0] / self.image_scale)
+        center_y = int(self.selection_start[1] / self.image_scale)
+        radius = int(((self.selection_end[0] - self.selection_start[0])**2 + 
+                     (self.selection_end[1] - self.selection_start[1])**2)**0.5 / self.image_scale)
+        
+        # Draw the circle using Bresenham's circle algorithm
+        x = radius
+        y = 0
+        err = 0
+        
+        while x >= y:
+            # Draw 8 points for each iteration (symmetry of a circle)
+            points = [
+                (center_x + x, center_y + y),
+                (center_x + y, center_y + x),
+                (center_x - y, center_y + x),
+                (center_x - x, center_y + y),
+                (center_x - x, center_y - y),
+                (center_x - y, center_y - x),
+                (center_x + y, center_y - x),
+                (center_x + x, center_y - y)
+            ]
+            
+            # Draw all points that are within the grid bounds
+            for px, py in points:
+                if 0 <= px < self.grid_width and 0 <= py < self.grid_height:
+                    self.grid_bid[py, px] = self.current_select_shape
+                    self.grid_colors[py, px] = self.current_select_color
+                    self.draw_cell(px, py, self.current_select_shape, self.current_select_color)
+            
+            if err <= 0:
+                y += 1
+                err += 2*y + 1
+            if err > 0:
+                x -= 1
+                err -= 2*x + 1
+        
+        # Refresh the image and remove the selection circle
+        self.refresh_image()
+        self.canvas.delete("selection_rect")
+
     def mode_area(self):
         self.bool_paste_mode = False
         if self.image_over_id !=0:
@@ -902,11 +987,15 @@ class ImageEditorApp(BidFile, ActionState):
         # Select the cell
         self.grid_sel_cells[y, x] = 1
         
-        # Check adjacent cells
-        self.select_adjacent_cells(x, y - 1, color)  # Up
-        self.select_adjacent_cells(x, y + 1, color)  # Down
-        self.select_adjacent_cells(x - 1, y, color)  # Left
-        self.select_adjacent_cells(x + 1, y, color)  # Right
+        # Check adjacent cells (including diagonals)
+        self.select_adjacent_cells(x, y - 1, color)      # Up
+        self.select_adjacent_cells(x, y + 1, color)      # Down
+        self.select_adjacent_cells(x - 1, y, color)      # Left
+        self.select_adjacent_cells(x + 1, y, color)      # Right
+        self.select_adjacent_cells(x - 1, y - 1, color)  # Up-Left
+        self.select_adjacent_cells(x + 1, y - 1, color)  # Up-Right
+        self.select_adjacent_cells(x - 1, y + 1, color)  # Down-Left
+        self.select_adjacent_cells(x + 1, y + 1, color)  # Down-Right
 
     def update_magic_selection(self):
         for y in range(self.grid_height):
@@ -940,6 +1029,18 @@ class ImageEditorApp(BidFile, ActionState):
         self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        
+        # Update size label
+        if len(self.grid_clipboard) > 0:
+            min_x = min(x for x, _, _, _ in self.grid_clipboard)
+            max_x = max(x for x, _, _, _ in self.grid_clipboard)
+            min_y = min(y for _, y, _, _ in self.grid_clipboard)
+            max_y = max(y for _, y, _, _ in self.grid_clipboard)
+            width = max_x - min_x + 1
+            height = max_y - min_y + 1
+            self.size_clipboard_label.config(text=f"{width:02d} x {height:02d}")
+        else:
+            self.size_clipboard_label.config(text="00 x 00")
 
     def paste_cells(self):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
