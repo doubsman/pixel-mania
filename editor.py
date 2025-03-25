@@ -144,14 +144,14 @@ class ImageEditorApp(BidFile, ActionState):
         ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=0).pack(side="left", padx=0, pady=0)
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
 
-        opencar_button = self.create_button(left_frame, 'ico/openbid.png', self.open_carousselbid, "open")
-        open_button = self.create_button(left_frame, 'ico/open.png', self.open_bid, "open")
+        opengal_button = self.create_button(left_frame, 'ico/opengal.png', self.open_carousselbid, "open")
+        open_button = self.create_button(left_frame, 'ico/openbid.png', self.open_bid, "open")
         save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
         saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
         new_button = self.create_button(left_frame, 'ico/plus.png', self.create_bid, "New")
         save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
-        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=6)
+        ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII")
         folder_button = self.create_button(left_frame, 'ico/open.png', self.open_folder, "Open Folder")
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
@@ -275,7 +275,7 @@ class ImageEditorApp(BidFile, ActionState):
         dialog.title("Open Bid File")
         icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
         dialog.iconphoto(False, icon)
-        dialog.geometry("890x800")
+        dialog.geometry("1290x1290")
         dialog.transient(self.root)  # make the window modal
         dialog.grab_set()  # force focus on this window
         dialog.resizable(width=False, height=True)
@@ -322,8 +322,8 @@ class ImageEditorApp(BidFile, ActionState):
         dialog.geometry(f'+{x}+{y}')
         
         # Define a minimum size for the window
-        dialog.minsize(733,567)
-        
+        dialog.minsize(1290,1290)
+
         # Wait for the window to be closed
         dialog.wait_window()
 

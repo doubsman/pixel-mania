@@ -271,7 +271,7 @@ class BidCarrousel(ttk.Frame):
         self.bid_dir = bid_dir
         self.thumbnails = []
         self.callback = callback
-        self.thumbnail_size = 100
+        self.thumbnail_size = 150
         self.loading_queue = queue.Queue()
         self.is_loading = False
         self.all_bid_files = []  # Store all bid files
