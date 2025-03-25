@@ -5,16 +5,16 @@ from PIL import ImageTk, Image
 import numpy as np
 import os
 import subprocess
+import sys
+import logging
 from pynput.keyboard import Key, Controller, Listener
 from class_bid import BidFile
 from class_cells import Cells
 from class_action import ActionState
 from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
-import sys
-import logging
-from class_carrousel import SymbolCarrousel
-from class_carrousel import BidCarrousel
+from class_carrousel import SymbolCarrousel, BidCarrousel
+
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
@@ -169,7 +169,6 @@ class ImageEditorApp(BidFile, ActionState):
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=6)
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII")
-                                                                                                      
         folder_button = self.create_button(left_frame, 'ico/open.png', self.open_folder, "Open Folder")
 
         undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
@@ -185,14 +184,15 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
+        drawline_button = self.create_button(left_frame2, 'ico/line.png', self.draw_line, "Draw Line")
         rectangle_button = self.create_button(left_frame2, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
-        filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        filpv_button = self.create_button(left_frame, 'ico/flip-v.png', self.flipv_cells, "Flip V")
         filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
+        rotate_l_button = self.create_button(left_frame, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
         rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
         inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
         fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
-        grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
+        grad_button = self.create_button(left_frame, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
         
         self.mode_copy = ttk.Label(left_frame2, text="SUB (✖)", foreground="blue")
         self.mode_copy.pack(side="bottom")
@@ -682,6 +682,75 @@ class ImageEditorApp(BidFile, ActionState):
         self.grid_colors[self.grid_y][self.grid_x] = self.current_select_color
         self.draw_cell(self.grid_x, self.grid_y, self.current_select_shape, self.current_select_color)
         self.refresh_image()
+
+    def draw_line(self):
+        """Enable line drawing mode"""
+        self.bool_paste_mode = False
+        if self.image_over_id != 0:
+            self.canvas.delete(self.image_over_id)
+            self.image_over_id = 0
+        self.canvas.unbind("<Button-1>")
+        self.canvas.bind("<ButtonPress-1>", self.start_line)
+        self.canvas.bind("<B1-Motion>", self.update_line)
+        self.canvas.bind("<ButtonRelease-1>", self.end_line)
+
+    def start_line(self, event):
+        """Start drawing a line"""
+        self.selection_start = (event.x, event.y)
+        self.selection_end = (event.x, event.y)
+        self.selection_rect = self.canvas.create_line(
+            self.selection_start[0], self.selection_start[1],
+            self.selection_end[0], self.selection_end[1],
+            fill="blue", dash=(4, 4), tags="selection_rect"
+        )
+
+    def update_line(self, event):
+        """Update the line while drawing"""
+        self.selection_end = (event.x, event.y)
+        self.canvas.coords(
+            self.selection_rect,
+            self.selection_start[0], self.selection_start[1],
+            self.selection_end[0], self.selection_end[1]
+        )
+
+    def end_line(self, event):
+        """Finish drawing the line and apply it to the grid"""
+        self.selection_end = (event.x, event.y)
+        self.save_state()
+        
+        # Get grid coordinates for start and end points
+        start_x = int(self.selection_start[0] / self.image_scale)
+        start_y = int(self.selection_start[1] / self.image_scale)
+        end_x = int(self.selection_end[0] / self.image_scale)
+        end_y = int(self.selection_end[1] / self.image_scale)
+        
+        # Use Bresenham's algorithm to draw the line
+        dx = abs(end_x - start_x)
+        dy = abs(end_y - start_y)
+        x, y = start_x, start_y
+        n = 1 + dx + dy
+        x_inc = 1 if end_x > start_x else -1
+        y_inc = 1 if end_y > start_y else -1
+        error = dx - dy
+        dx *= 2
+        dy *= 2
+
+        for _ in range(n):
+            if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+                self.grid_bid[y, x] = self.current_select_shape
+                self.grid_colors[y, x] = self.current_select_color
+                self.draw_cell(x, y, self.current_select_shape, self.current_select_color)
+            
+            if error > 0:
+                x += x_inc
+                error -= dy
+            else:
+                y += y_inc
+                error += dx
+
+        # Refresh the image and remove the selection line
+        self.refresh_image()
+        self.canvas.delete("selection_rect")
 
     def draw_rectangle(self):
         self.bool_paste_mode = False
