@@ -250,6 +250,11 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
+        self.root.bind("<Control-z>", self.undo_action)
+        self.root.bind("<Control-c>", lambda event: self.copy_cells(False))
+        self.root.bind("<Control-v>", self.paste_cells)
+        self.root.bind("<Control-x>", lambda event: self.copy_cells(True))
+
         self.create_bid()
         self.refresh_thumbnail()
 
@@ -1042,7 +1047,7 @@ class ImageEditorApp(BidFile, ActionState):
         else:
             self.size_clipboard_label.config(text="00 x 00")
 
-    def paste_cells(self):
+    def paste_cells(self, event=None):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             # Paste mode activated
             self.bool_paste_mode = True  
