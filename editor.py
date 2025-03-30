@@ -147,13 +147,11 @@ class ImageEditorApp(BidFile, ActionState):
         new_button = self.create_button(left_frame, 'ico/plus.png', self.create_bid, "New")
         opengal_button = self.create_button(left_frame, 'ico/opengal.png', self.open_carousselbid, "open")
         open_button = self.create_button(left_frame, 'ico/openbid.png', self.open_bid, "open")
-        save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
-        saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
-        save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
+        self.save_button = self.create_button(left_frame, 'ico/save.png', self.save_bid, "Save bid")
+        self.saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
+        self.save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
 
-        self.coord_label = ttk.Label(left_frame, text="(00, 00)")
-        self.coord_label.pack(side="bottom")
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid", "bottom")
         folder_button = self.create_button(left_frame, 'ico/openfolder.png', self.open_folder, "Open Folder", "bottom")
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII", "bottom")
@@ -166,14 +164,11 @@ class ImageEditorApp(BidFile, ActionState):
         select_button = self.create_button(left_frame2, 'ico/selection.png', self.mode_select, "Cell Selecion")
         area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Area Selecion")
         magic_button = self.create_button(left_frame2, 'ico/magic.png', self.mode_magicselect, "Magic Selecion")
-        copy_button = self.create_button(left_frame2, 'ico/copy.png', self.copy_cells, "Copy")
-        cut_button = self.create_button(left_frame2, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
-        paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
-        fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
-        grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
-
-        self.size_clipboard_label = ttk.Label(left_frame2, text="00 x 00")
-        self.size_clipboard_label.pack(side="bottom")
+        self.copy_button = self.create_button(left_frame2, 'ico/copy.png', self.copy_cells, "Copy")
+        self.cut_button = self.create_button(left_frame2, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
+        self.paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
+        self.fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
+        self.grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
 
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
@@ -201,12 +196,15 @@ class ImageEditorApp(BidFile, ActionState):
         rotate_r_button = self.create_button(left_frame3, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
         inverse_button = self.create_button(left_frame3, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
         
-        self.mode_copy = ttk.Label(left_frame3, text="SUB (✖)", foreground="blue")
-        self.mode_copy.pack(side="bottom")
+        self.size_clipboard_label = ttk.Label(left_frame3, text="00 x 00")
+        self.size_clipboard_label.pack(side="bottom")
 
         self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
         self.thumbnail_canvas.pack(side="bottom", fill="y")
         self.thumbnail_canvas.pack_propagate(False)
+
+        self.mode_copy = ttk.Label(left_frame3, text="SUB (✖)", foreground="blue")
+        self.mode_copy.pack(side="bottom")
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
@@ -239,7 +237,7 @@ class ImageEditorApp(BidFile, ActionState):
         # Configure resizing
         self.canvas_frame.grid_rowconfigure(0, weight=1)
         self.canvas_frame.grid_columnconfigure(0, weight=1)
-        
+
         # Bind mouse wheel events for scrolling
         self.canvas.bind("<Control-MouseWheel>", self.zoom)  # Zoom with Ctrl+Wheel
         self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Vertical scroll
@@ -255,6 +253,10 @@ class ImageEditorApp(BidFile, ActionState):
 
         self.create_bid()
         self.refresh_thumbnail()
+
+        # Create coordinates label on outercanvas
+        self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
+        self.outercanvas.create_window(self.WIDTH + 40, self.HEIGHT + 80, window=self.coord_label, anchor="se")
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
@@ -382,7 +384,9 @@ class ImageEditorApp(BidFile, ActionState):
     def open_folder(self):
         if self.file_path != '':
             open_path = os.path.dirname(self.file_path).replace('/','\\')
-            subprocess.Popen(fr'explorer "{open_path}"')
+        else:
+            open_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bid')
+        subprocess.Popen(fr'explorer "{open_path}"')
 
     def open_grid_clipboard(self):
         # make modal window
@@ -567,13 +571,17 @@ class ImageEditorApp(BidFile, ActionState):
             self.canvas.unbind("<MouseWheel>")
             self.canvas.unbind("<Shift-MouseWheel>")
         
-        # Redraw selected cells
-        for y in range(self.grid_height):
-            for x in range(self.grid_width):
-                if self.grid_sel_cells[y, x] == 1:
-                    x1, y1 = (x * self.image_scale), (y * self.image_scale)
-                    x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        # Redraw selected cells if necessary
+        if np.any(self.grid_sel_cells == 1):
+            for y in range(self.grid_height):
+                for x in range(self.grid_width):
+                    if self.grid_sel_cells[y, x] == 1:
+                        x1, y1 = (x * self.image_scale), (y * self.image_scale)
+                        x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
+                        self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+
+        # Enable/disable buttons based on selection and clipboard content
+        self.update_buttons_state()
         
         # Redraw grid if necessary
         if self.bool_grid:
@@ -581,6 +589,38 @@ class ImageEditorApp(BidFile, ActionState):
             self.canvas.delete('grid_line_h')
             self.bool_grid = False
             self.draw_grill()
+
+    def update_buttons_state(self):
+        """Update the state of buttons."""
+        if np.any(self.grid_sel_cells == 1):
+            # Enable buttons when cells are selected
+            self.copy_button.config(state=ttk.NORMAL)
+            self.cut_button.config(state=ttk.NORMAL)
+            self.grad_button.config(state=ttk.NORMAL)
+            self.fill_button.config(state=ttk.NORMAL)
+        else:
+            # Disable buttons when no cells are selected
+            self.copy_button.config(state=ttk.DISABLED)
+            self.cut_button.config(state=ttk.DISABLED)
+            self.grad_button.config(state=ttk.DISABLED)
+            self.fill_button.config(state=ttk.DISABLED)
+
+        if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
+            self.paste_button.config(state=ttk.NORMAL)
+        else:
+            self.paste_button.config(state=ttk.DISABLED)
+        
+        if self.bool_backup:
+            self.save_button.config(state=ttk.NORMAL)
+            self.saveas_button.config(state=ttk.NORMAL)
+            if self.file_path != '':
+                self.save_image_button.config(state=ttk.NORMAL)
+            else:
+                self.save_image_button.config(state=ttk.DISABLED)
+        else:
+            self.save_button.config(state=ttk.DISABLED)
+            self.saveas_button.config(state=ttk.DISABLED)
+            self.save_image_button.config(state=ttk.DISABLED)
 
     def center_image_on_canvas(self, canvas, image):
         photo = ImageTk.PhotoImage(image)
@@ -614,6 +654,7 @@ class ImageEditorApp(BidFile, ActionState):
             image = Image.open(resource_path(os.path.join('ico', 'empty.png')))
             image = image.resize((84, 84), Image.LANCZOS)
             self.center_image_on_canvas(self.thumbnail_canvas, image)
+        self.update_buttons_state()
 
     def change_size(self, dimension, delta):
         """Change the size of the grid by incrementing or decrementing"""
@@ -636,7 +677,7 @@ class ImageEditorApp(BidFile, ActionState):
 
     def update_grid_size(self, new_width=None, new_height=None):
         """Update the size of the grid"""
-        if self.file_path == '':
+        if self.file_path == '' and not self.bool_backup:
             self.new_bid(self.WIDTH, self.HEIGHT, new_width or self.grid_width, new_height or self.grid_height)
             self.init_bid()
         else:
@@ -933,6 +974,7 @@ class ImageEditorApp(BidFile, ActionState):
                 x1, y1 = (x * self.image_scale), (y * self.image_scale)
                 x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        self.update_buttons_state()
 
     def mode_select(self):
         self.canvas.unbind("<ButtonPress-1>")
@@ -959,6 +1001,7 @@ class ImageEditorApp(BidFile, ActionState):
             x1, y1 = (self.grid_x * self.image_scale), (self.grid_y * self.image_scale)
             x2, y2 = ((self.grid_x+1) * self.image_scale), ((self.grid_y+1) * self.image_scale)
             self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{self.grid_x}_{self.grid_y}"])
+        self.update_buttons_state()
 
     def mode_magicselect(self):
         self.canvas.unbind("<ButtonPress-1>")
@@ -1013,6 +1056,7 @@ class ImageEditorApp(BidFile, ActionState):
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        self.update_buttons_state()
 
     def copy_cells(self, cut=False):
         self.canvas.unbind("<ButtonPress-1>")
@@ -1038,7 +1082,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-        
+        self.update_buttons_state()
+
         # Update size label
         if len(self.grid_clipboard) > 0:
             min_x = min(x for x, _, _, _ in self.grid_clipboard)

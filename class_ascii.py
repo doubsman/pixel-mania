@@ -101,7 +101,7 @@ class BidASCII():
             grid_ascii[row] = backup_line
         self.display_result += '\n└' + '─' * (2 + width*width_cellule) + '┘'
 
-        if path_ascii is not None:
+        if path_ascii is not None and path_ascii != '':
             filename_ascii = os.path.splitext(os.path.basename(path_ascii))[0] + '.ascii'
             path_ascii = os.path.join('wrk', filename_ascii)
             np.savetxt(path_ascii, grid_ascii, fmt='%s', encoding='utf-8')

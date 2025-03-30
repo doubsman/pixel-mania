@@ -52,17 +52,23 @@ class CmdTerminal:
                 ps_file.write('$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")\n')
                 ps_script = ps_file.name
 
-            # Lancer PowerShell dans une nouvelle fenêtre
+            # Lancer PowerShell dans une nouvelle fenêtre sans attendre
             cmd = f'start powershell -NoProfile -ExecutionPolicy Bypass -File "{ps_script}"'
-            subprocess.run(cmd, shell=True)
+            process = subprocess.Popen(cmd, shell=True)
+            
+            # Démarrer un thread pour nettoyer les fichiers temporaires après un délai
+            def cleanup():
+                time.sleep(2)  # Attendre que la fenêtre soit bien ouverte
+                try:
+                    os.unlink(text_file_name)
+                    os.unlink(ps_script)
+                except:
+                    pass
 
-            # Attendre un peu avant de supprimer les fichiers
-            time.sleep(1)
-            try:
-                os.unlink(text_file_name)
-                os.unlink(ps_script)
-            except:
-                pass
+            import threading
+            cleanup_thread = threading.Thread(target=cleanup)
+            cleanup_thread.daemon = True
+            cleanup_thread.start()
 
         elif self.commande:
             # Créer un fichier temporaire pour le script PowerShell
@@ -98,16 +104,22 @@ class CmdTerminal:
                 ps_file.write('$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")\n')
                 ps_script = ps_file.name
 
-            # Lancer PowerShell dans une nouvelle fenêtre
+            # Lancer PowerShell dans une nouvelle fenêtre sans attendre
             cmd = f'start powershell -NoProfile -ExecutionPolicy Bypass -File "{ps_script}"'
-            subprocess.run(cmd, shell=True)
+            process = subprocess.Popen(cmd, shell=True)
+            
+            # Démarrer un thread pour nettoyer les fichiers temporaires après un délai
+            def cleanup():
+                time.sleep(2)  # Attendre que la fenêtre soit bien ouverte
+                try:
+                    os.unlink(ps_script)
+                except:
+                    pass
 
-            # Attendre un peu avant de supprimer le script
-            time.sleep(1)
-            try:
-                os.unlink(ps_script)
-            except:
-                pass
+            import threading
+            cleanup_thread = threading.Thread(target=cleanup)
+            cleanup_thread.daemon = True
+            cleanup_thread.start()
 
         else:
             print(" Vous devez spécifier soit une commande, soit un texte à afficher ")
