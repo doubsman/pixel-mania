@@ -623,14 +623,15 @@ class ImageEditorApp(BidFile, ActionState):
         if self.bool_backup:
             self.save_button.config(state=ttk.NORMAL)
             self.saveas_button.config(state=ttk.NORMAL)
-            if self.file_path != '':
-                self.save_image_button.config(state=ttk.NORMAL)
-            else:
-                self.save_image_button.config(state=ttk.DISABLED)
         else:
             self.save_button.config(state=ttk.DISABLED)
             self.saveas_button.config(state=ttk.DISABLED)
+
+        if self.file_path != '':
+            self.save_image_button.config(state=ttk.NORMAL)
+        else:
             self.save_image_button.config(state=ttk.DISABLED)
+
 
     def center_image_on_canvas(self, canvas, image):
         photo = ImageTk.PhotoImage(image)
@@ -1262,6 +1263,8 @@ class ImageEditorApp(BidFile, ActionState):
         if self.bool_backup:
             if askyesno("Save", "There are unsaved changes. Do you want to save before quitting?"):
                 self.save_bid()
+                self.root.destroy()
+            else:
                 self.root.destroy()
         else:
             self.root.destroy()
