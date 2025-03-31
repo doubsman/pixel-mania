@@ -14,6 +14,7 @@ from class_action import ActionState
 from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
+from class_splashscreen import SplashScreen
 
 
 # Logging configuration
@@ -55,12 +56,15 @@ def resource_path(relative_path):
         logger.error(f"Error in resource_path: {str(e)}")
         return relative_path
 
+
 class ImageEditorApp(BidFile, ActionState):
     def __init__(self, root):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Image Bid Editor v1.00rc1"
+        self.tittle = "Pixel Mania : Bid Editor v1.00rc2"
+        
+        # Configure main window first
         self.root.title(self.tittle)
         self.root.geometry("1800x1520")
         self.root.resizable(width=False, height=False)
@@ -102,7 +106,7 @@ class ImageEditorApp(BidFile, ActionState):
         # Default image scale
         self.image_scale_default = 1
         # Collect events until released
-        listener = Listener(on_press=self.on_press)
+        listener = Listener(on_press=self.on_press, on_release=self.on_release)
         listener.start()
         self.controler = Controller()
         
@@ -118,8 +122,15 @@ class ImageEditorApp(BidFile, ActionState):
             print(f"Current directory: {os.getcwd()}")
             print(f"Available files: {os.listdir('.')}")
         
+        # Initialize UI
         self.initialize_ui()
-
+        
+        # Create and show splash screen after UI is initialized
+        self.splash = SplashScreen(self.root, self.tittle)
+        
+        # Schedule splash screen destruction
+        self.root.after(2000, self.destroy_splash)
+        
     def initialize_ui(self):
         icon = ImageTk.PhotoImage(file=resource_path(os.path.join('ico', 'carre.png')))
         self.root.iconphoto(False, icon)
@@ -169,10 +180,14 @@ class ImageEditorApp(BidFile, ActionState):
         self.paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
         self.fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
         self.grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
-
+        inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
+        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=20)
+        filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
+        
+        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5, side='bottom')
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
-        init_symbol = self.create_button(left_frame2, 'ico/cross.png', self.clear_grid_clipboard, "Reset Symbol", 'bottom', 25)
 
         left_frame3 = ttk.Frame(self.root)
         left_frame3['borderwidth'] = 5
@@ -190,11 +205,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
-        filpv_button = self.create_button(left_frame3, 'ico/flip-v.png', self.flipv_cells, "Flip V")
         filph_button = self.create_button(left_frame3, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Flip V")
-        rotate_r_button = self.create_button(left_frame3, 'ico/rotate-right.png', self.rotate_r_cells, "Flip H")
-        inverse_button = self.create_button(left_frame3, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
+        rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
         self.size_clipboard_label = ttk.Label(left_frame3, text="00 x 00")
         self.size_clipboard_label.pack(side="bottom")
@@ -246,10 +258,14 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
+        self.root.bind("<Control-m>", self.open_carousselbid)
+        self.root.bind("<Control-o>", self.open_bid)
+        self.root.bind("<Control-s>", self.save_bid)
         self.root.bind("<Control-z>", self.undo_action)
         self.root.bind("<Control-c>", lambda event: self.copy_cells(False))
-        self.root.bind("<Control-v>", self.paste_cells)
         self.root.bind("<Control-x>", lambda event: self.copy_cells(True))
+        self.root.bind("<Control-v>", self.paste_cells)
+        self.root.bind("<Control-g>", self.draw_grill)
 
         self.create_bid()
         self.refresh_thumbnail()
@@ -265,7 +281,7 @@ class ImageEditorApp(BidFile, ActionState):
         button.pack(pady=pady, side=side)
         return button
 
-    def open_bid(self):
+    def open_bid(self, event=None):
         bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")], initialdir="wrk")
         if bid_path != '':
             self.save_bid()
@@ -274,7 +290,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
             self.init_bid()      
 
-    def open_carousselbid(self):
+    def open_carousselbid(self, event=None):
         # make modal window
         dialog = ttk.Toplevel(self.root)
         dialog.title("Open Bid File")
@@ -357,7 +373,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.refresh_image()
         self.mode_draw()
 
-    def save_bid(self):
+    def save_bid(self, event=None):
         if self.file_path == '' and self.bool_backup:
             self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
         self.write_bid()
@@ -452,12 +468,6 @@ class ImageEditorApp(BidFile, ActionState):
                 number += 1
                 path_symbol = os.path.join('sym', f'symbol{number:03d}.sym')
             np.savetxt(path_symbol, self.grid_clipboard, fmt='%i', delimiter=";")
-
-    def clear_grid_clipboard(self):
-        if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
-            self.grid_clipboard = []
-            self.refresh_thumbnail()
-            self.size_clipboard_label.config(text="00 x 00")
 
     def display_console_bid(self):
         file_ascii = self.file_path.replace('.bid','.ascii')
@@ -1190,7 +1200,7 @@ class ImageEditorApp(BidFile, ActionState):
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
             self.refresh_image()
 
-    def draw_grill(self):
+    def draw_grill(self, event=None):
         if not self.bool_grid:
             width_image = self.grid_width * self.image_scale
             height_image = self.grid_height * self.image_scale
@@ -1237,20 +1247,31 @@ class ImageEditorApp(BidFile, ActionState):
             self.refresh_thumbnail()
 
     def on_press(self, key):
-        if key == Key.insert:
-            self.bool_mode_add_selection = not self.bool_mode_add_selection
-            if self.bool_mode_add_selection:
-                self.mode_copy.config(text="ADD (✚)", foreground="green")
-                self.canvas.config(cursor="plus")
-            else:
-                self.mode_copy.config(text="SUB (✖)", foreground="blue")
-                self.canvas.config(cursor="")
-        
+        if key == Key.shift:
+            self.bool_mode_add_selection = True
+            self.mode_copy.config(text="ADD (✚)", foreground="green")
+            self.canvas.config(cursor="plus")
+
+    def on_release(self, key):
+        if key == Key.shift:
+            self.bool_mode_add_selection = False
+            self.mode_copy.config(text="SUB (✖)", foreground="blue")
+            self.canvas.config(cursor="")
+
     def on_closing(self):
         if self.bool_backup:
             if askyesno("Save", "There are unsaved changes. Do you want to save before quitting?"):
                 self.save_bid()
-        self.root.destroy()
+                self.root.destroy()
+        else:
+            self.root.destroy()
+
+    def destroy_splash(self):
+        """Destroy the splash screen if it exists"""
+        if hasattr(self, 'splash'):
+            self.splash.destroy()
+            delattr(self, 'splash')
+
 
 if __name__ == "__main__":
     root = ttk.Window(themename="minty")
