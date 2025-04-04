@@ -62,18 +62,18 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Pixel Mania : Bid Editor v1.00rc2"
+        self.tittle = "Pixel Mania : Bid Editor v1.00rc3"
         
         # Configure main window first
         self.root.title(self.tittle)
-        self.root.geometry("1800x1520")
+        self.root.geometry("1820x1560")
         self.root.resizable(width=False, height=False)
         
         # Intercept window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        self.WIDTH = 1800-300-100
-        self.HEIGHT = 1520-20-100
+        self.WIDTH = 1820-250-100
+        self.HEIGHT = 1560-20-100
         self.file_path = ""
         # Canvas Grid Mode
         self.bool_grid = True
@@ -136,7 +136,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.root.iconphoto(False, icon)
 
         # The left frame to contain the buttons
-        left_frame = ttk.Frame(self.root)
+        left_frame = ttk.Frame(self.root, width=100)
         left_frame['borderwidth'] = 5
         left_frame.pack(side="left", fill="y")
 
@@ -167,7 +167,7 @@ class ImageEditorApp(BidFile, ActionState):
         folder_button = self.create_button(left_frame, 'ico/openfolder.png', self.open_folder, "Open Folder", "bottom")
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII", "bottom")
 
-        left_frame2 = ttk.Frame(self.root)
+        left_frame2 = ttk.Frame(self.root, width=100)
         left_frame2['borderwidth'] = 5
         left_frame2.pack(side="left", fill="y")
 
@@ -185,11 +185,10 @@ class ImageEditorApp(BidFile, ActionState):
         filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
         rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
         
-        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=5, side='bottom')
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
 
-        left_frame3 = ttk.Frame(self.root)
+        left_frame3 = ttk.Frame(self.root, width=100)
         left_frame3['borderwidth'] = 5
         left_frame3.pack(side="left", fill="y")
 
@@ -208,14 +207,14 @@ class ImageEditorApp(BidFile, ActionState):
         filph_button = self.create_button(left_frame3, 'ico/flip-h.png', self.fliph_cells, "Flip H")
         rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
-        self.size_clipboard_label = ttk.Label(left_frame3, text="00 x 00")
-        self.size_clipboard_label.pack(side="bottom")
-
         self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
         self.thumbnail_canvas.pack(side="bottom", fill="y")
         self.thumbnail_canvas.pack_propagate(False)
 
-        self.mode_copy = ttk.Label(left_frame3, text="SUB (✖)", foreground="blue")
+        self.size_clipboard_label = ttk.Label(left_frame3, text="00 x 00")
+        self.size_clipboard_label.pack(side="bottom")
+
+        self.mode_copy = ttk.Label(left_frame3)
         self.mode_copy.pack(side="bottom")
 
         # The right canvas for displaying the image
@@ -224,7 +223,7 @@ class ImageEditorApp(BidFile, ActionState):
 
         # Create a frame to contain the canvas and scrollbars
         self.canvas_frame = Frame(self.outercanvas)
-        self.outercanvas.create_window(50, 50, window=self.canvas_frame, anchor="nw")
+        self.outercanvas.create_window(60, 60, window=self.canvas_frame, anchor="nw")
 
         # Create the scrollbars
         self.v_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical")
@@ -272,7 +271,7 @@ class ImageEditorApp(BidFile, ActionState):
 
         # Create coordinates label on outercanvas
         self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
-        self.outercanvas.create_window(self.WIDTH + 40, self.HEIGHT + 80, window=self.coord_label, anchor="se")
+        self.outercanvas.create_window(self.WIDTH + 20, self.HEIGHT + 95, window=self.coord_label, anchor="se")
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
@@ -389,6 +388,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.file_path = self.path_bid
             self.root.title(f'{self.tittle} [{self.file_path}]')
             self.bool_backup = False
+            self.update_buttons_state()
 
     def save_image(self):
         if self.file_path == '':
@@ -993,8 +993,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.select_cellules)
         self.bool_paste_mode = False
-        if not self.bool_mode_add_selection:
-            self.controler.press(Key.insert)
         if self.image_over_id !=0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -1020,8 +1018,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.bind("<Button-1>", self.magic_select_cellules)
         self.bool_paste_mode = False
-        if not self.bool_mode_add_selection:
-            self.controler.press(Key.insert)
         if self.image_over_id != 0:
             self.canvas.delete(self.image_over_id)
             self.image_over_id = 0
@@ -1256,7 +1252,7 @@ class ImageEditorApp(BidFile, ActionState):
     def on_release(self, key):
         if key == Key.shift:
             self.bool_mode_add_selection = False
-            self.mode_copy.config(text="SUB (✖)", foreground="blue")
+            self.mode_copy.config(text="")
             self.canvas.config(cursor="")
 
     def on_closing(self):
