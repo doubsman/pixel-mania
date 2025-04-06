@@ -143,14 +143,14 @@ class ImageEditorApp(BidFile, ActionState):
         width_frame = ttk.Frame(left_frame)
         width_frame.pack()
         ttk.Button(width_frame, text="-", command=lambda: self.change_size('width', -2), bootstyle="outline", width=2, padding=0).pack(side="left", padx=0, pady=5)
-        self.grid_width_label = ttk.Label(width_frame, text="48")
+        self.grid_width_label = ttk.Label(width_frame, text="48", font=('TkDefaultFont', 12, 'bold'))
         self.grid_width_label.pack(side="left", padx=2, pady=0)
         ttk.Button(width_frame, text="+", command=lambda: self.change_size('width', 2), bootstyle="outline", width=2, padding=0).pack(side="left", padx=0, pady=5)
 
         height_frame = ttk.Frame(left_frame)
         height_frame.pack()
         ttk.Button(height_frame, text="-", command=lambda: self.change_size('height', -2), bootstyle="outline", width=2, padding=0).pack(side="left", padx=0, pady=5)
-        self.grid_height_label = ttk.Label(height_frame, text="48")
+        self.grid_height_label = ttk.Label(height_frame, text="48", font=('TkDefaultFont', 12, 'bold'))
         self.grid_height_label.pack(side="left", padx=2, pady=0)
         ttk.Button(height_frame, text="+", command=lambda: self.change_size('height', 2), bootstyle="outline", width=2, padding=0).pack(side="left", padx=0, pady=5)
         ttk.Separator(left_frame, orient='horizontal').pack(fill='x', pady=4)
@@ -171,7 +171,7 @@ class ImageEditorApp(BidFile, ActionState):
         left_frame2['borderwidth'] = 5
         left_frame2.pack(side="left", fill="y")
 
-        undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
+        self.undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
         select_button = self.create_button(left_frame2, 'ico/selection.png', self.mode_select, "Cell Selecion")
         area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Area Selecion")
         magic_button = self.create_button(left_frame2, 'ico/magic.png', self.mode_magicselect, "Magic Selecion")
@@ -187,6 +187,9 @@ class ImageEditorApp(BidFile, ActionState):
         
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
+
+        self.mode_copy = ttk.Label(left_frame2)
+        self.mode_copy.pack(side="bottom")
 
         left_frame3 = ttk.Frame(self.root, width=100)
         left_frame3['borderwidth'] = 5
@@ -208,14 +211,11 @@ class ImageEditorApp(BidFile, ActionState):
         rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
         self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
-        self.thumbnail_canvas.pack(side="bottom", fill="y")
+        self.thumbnail_canvas.pack(side="bottom", fill="y", padx=0)
         self.thumbnail_canvas.pack_propagate(False)
 
-        self.size_clipboard_label = ttk.Label(left_frame3, text="00 x 00")
+        self.size_clipboard_label = ttk.Label(left_frame3, text="", font=('TkDefaultFont', 12, 'bold'))
         self.size_clipboard_label.pack(side="bottom")
-
-        self.mode_copy = ttk.Label(left_frame3)
-        self.mode_copy.pack(side="bottom")
 
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
@@ -223,7 +223,24 @@ class ImageEditorApp(BidFile, ActionState):
 
         # Create a frame to contain the canvas and scrollbars
         self.canvas_frame = Frame(self.outercanvas)
-        self.outercanvas.create_window(60, 60, window=self.canvas_frame, anchor="nw")
+        
+        def update_window_position():
+            # Calculate center position
+            outer_width = self.outercanvas.winfo_width()
+            outer_height = self.outercanvas.winfo_height()
+            frame_width = self.canvas_frame.winfo_reqwidth()
+            frame_height = self.canvas_frame.winfo_reqheight()
+            
+            x = (outer_width - frame_width) // 2
+            y = (outer_height - frame_height) // 2
+            
+            self.outercanvas.coords(self.window_id, x, y)
+        
+        # Create window initially at (0,0)
+        self.window_id = self.outercanvas.create_window(0, 0, window=self.canvas_frame, anchor="nw")
+        
+        # Update position after window is created
+        self.root.after(100, update_window_position)
 
         # Create the scrollbars
         self.v_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical")
@@ -271,7 +288,7 @@ class ImageEditorApp(BidFile, ActionState):
 
         # Create coordinates label on outercanvas
         self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
-        self.outercanvas.create_window(self.WIDTH + 20, self.HEIGHT + 95, window=self.coord_label, anchor="se")
+        self.outercanvas.create_window(self.WIDTH + 95, self.HEIGHT + 115, window=self.coord_label, anchor="se")
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
@@ -631,7 +648,10 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_image_button.config(state=ttk.NORMAL)
         else:
             self.save_image_button.config(state=ttk.DISABLED)
-
+        if self.history:
+            self.undo_button.config(state=ttk.NORMAL)
+        else:
+            self.undo_button.config(state=ttk.DISABLED)
 
     def center_image_on_canvas(self, canvas, image):
         photo = ImageTk.PhotoImage(image)
@@ -1101,7 +1121,7 @@ class ImageEditorApp(BidFile, ActionState):
             height = max_y - min_y + 1
             self.size_clipboard_label.config(text=f"{width:02d} x {height:02d}")
         else:
-            self.size_clipboard_label.config(text="00 x 00")
+            self.size_clipboard_label.config(text="")
 
     def paste_cells(self, event=None):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
