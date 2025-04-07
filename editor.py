@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog, Frame
 from tkinter.messagebox import askyesno
-from PIL import ImageTk, Image, ImageDraw
+from PIL import ImageTk, Image
 import numpy as np
 import os
 import subprocess
@@ -10,7 +10,7 @@ import logging
 from pynput.keyboard import Key, Controller, Listener
 from class_bid import BidFile
 from class_cells import Cells
-from class_action import ActionState
+from class_action import ActionState, Action
 from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
@@ -62,7 +62,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Pixel Mania : Bid Editor v1.00rc3"
+        self.tittle = "Pixel Mania : Bid Editor v1.00rc4"
         
         # Configure main window first
         self.root.title(self.tittle)
@@ -166,7 +166,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
         self.save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
-
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid", "bottom")
         folder_button = self.create_button(left_frame, 'ico/openfolder.png', self.open_folder, "Open Folder", "bottom")
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII", "bottom")
@@ -200,7 +199,7 @@ class ImageEditorApp(BidFile, ActionState):
         left_frame3['borderwidth'] = 5
         left_frame3.pack(side="left", fill="y")
 
-        self.redo_button = self.create_button(left_frame3, 'ico/redo.png', self.redo_action, "Cancel")
+        self.redo_button = self.create_button(left_frame3, 'ico/redo.png', self.redo_action, "Retreive Cancel")
         drawline_button = self.create_button(left_frame3, 'ico/line.png', self.draw_line, "Draw Line")
         rectangle_button = self.create_button(left_frame3, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
         circle_button = self.create_button(left_frame3, 'ico/circle.png', self.draw_circle, "Draw Circle")
@@ -660,10 +659,14 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_image_button.config(state=ttk.NORMAL)
         else:
             self.save_image_button.config(state=ttk.DISABLED)
-        if self.history:
+        if self.undo_stack:
             self.undo_button.config(state=ttk.NORMAL)
         else:
             self.undo_button.config(state=ttk.DISABLED)
+        if self.redo_stack:
+            self.redo_button.config(state=ttk.NORMAL)
+        else:
+            self.redo_button.config(state=ttk.DISABLED)
 
     def center_image_on_canvas(self, canvas, image):
         photo = ImageTk.PhotoImage(image)
@@ -1197,16 +1200,15 @@ class ImageEditorApp(BidFile, ActionState):
 
     def inverse_colors(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             if self.inverse_grid():
                 self.refresh_image()
+                self.save_state()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.inverse_colors()
             self.refresh_thumbnail()
 
     def fill_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             for y in range(self.grid_height):
                 for x in range(self.grid_width):
                     if self.grid_sel_cells[y, x] == 1:
@@ -1214,10 +1216,10 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_bid[y, x] = self.current_select_shape
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
             self.refresh_image()
+            self.save_state()
 
     def gradient_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             min_x, max_x, min_y, max_y = self._get_selection_bounds()
             width = (max_x - min_x + 1)
             for y in range(self.grid_height):
@@ -1228,6 +1230,7 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_colors[y, x] = color_value
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
             self.refresh_image()
+            self.save_state()
 
     def draw_grill(self, event=None, change=True):
         if self.bool_grid:
@@ -1262,17 +1265,20 @@ class ImageEditorApp(BidFile, ActionState):
             self.bool_grid = not self.bool_grid
 
     def undo_action(self, event=None):
-        self.restore_state()
-    
+        action = self.undo_actionstate()
+        if action is not None:
+            current_state = Action(self.grid_bid.copy(), self.grid_colors.copy(), self.grid_clipboard.copy(), self.grid_sel_cells.copy())
+            self.retreive_action(action)
+            self.redo_stack.append(current_state)
+
     def redo_action(self, event=None):
-        self.restore_state()
+        action = self.redo_actionstate()
+        if action is not None:
+            current_state = Action(self.grid_bid.copy(), self.grid_colors.copy(), self.grid_clipboard.copy(), self.grid_sel_cells.copy())
+            self.retreive_action(action)
+            #self.undo_stack.append(current_state)
 
-    def save_state(self):
-        self.bool_backup = True
-        self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
-
-    def restore_state(self):
-        action = self.restore_actionstate()
+    def retreive_action(self, action=None):
         if action is not None:
             self.grid_bid = action.grid_bid
             self.grid_colors = action.grid_colors
@@ -1281,6 +1287,11 @@ class ImageEditorApp(BidFile, ActionState):
             self.draw_bidfile()
             self.refresh_image()
             self.refresh_thumbnail()
+
+    def save_state(self):
+        """Save ACtion."""
+        self.bool_backup = True
+        self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
 
     def on_press(self, key):
         if key == Key.shift:

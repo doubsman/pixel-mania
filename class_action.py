@@ -10,7 +10,8 @@ class Action:
 
 class ActionState():
     def __init__(self):
-        self.history = []
+        self.undo_stack = []
+        self.redo_stack = []
         
     def save_actionstate(self, grid_bid, grid_colors, grid_clipboard, grid_sel_cells):
         """Sauvegarde l'état actuel dans l'historique."""
@@ -20,11 +21,22 @@ class ActionState():
             np.copy(grid_clipboard),
             np.copy(grid_sel_cells)
         )
-        self.history.append(action)
+        self.undo_stack.append(action)
+        self.redo_stack.clear()
     
-    def restore_actionstate(self):
-        if self.history:
-            return self.history.pop()
+    def undo_actionstate(self):
+        if self.undo_stack:
+            action = self.undo_stack.pop()
+            self.redo_stack.append(action)
+            return action
+        else:
+            return None
+
+    def redo_actionstate(self):
+        if self.redo_stack:
+            action = self.redo_stack.pop()
+            self.undo_stack.append(action)
+            return action
         else:
             return None
             
