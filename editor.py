@@ -1233,7 +1233,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_state()
 
     def draw_grill(self, event=None, change=True):
-        if self.bool_grid:
+        if self.bool_grid or not change:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
 
@@ -1272,11 +1272,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.redo_stack.append(current_state)
 
     def redo_action(self, event=None):
-        action = self.redo_actionstate()
-        if action is not None:
-            current_state = Action(self.grid_bid.copy(), self.grid_colors.copy(), self.grid_clipboard.copy(), self.grid_sel_cells.copy())
-            self.retreive_action(action)
-            #self.undo_stack.append(current_state)
+        self.retreive_action(self.redo_actionstate())
 
     def retreive_action(self, action=None):
         if action is not None:
