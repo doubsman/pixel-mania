@@ -99,8 +99,8 @@ class SymbolCarrousel:
         self.canvas.itemconfig(self.canvas_window, width=max(bbox, self.canvas.winfo_width()))
         
     def _on_shift_mousewheel(self, event):
-        """Handle the horizontal scrolling"""
-        self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
+        if self.canvas.winfo_exists():
+            self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
         
     def load_symbols(self):
         """Load all .sym files in the directory"""

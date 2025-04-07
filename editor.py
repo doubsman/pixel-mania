@@ -185,9 +185,10 @@ class ImageEditorApp(BidFile, ActionState):
         self.fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
         self.grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
         inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
-        ttk.Separator(left_frame2, orient='horizontal').pack(fill='x', pady=20)
         filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
         rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
+        rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
@@ -199,6 +200,7 @@ class ImageEditorApp(BidFile, ActionState):
         left_frame3['borderwidth'] = 5
         left_frame3.pack(side="left", fill="y")
 
+        self.redo_button = self.create_button(left_frame3, 'ico/redo.png', self.redo_action, "Cancel")
         drawline_button = self.create_button(left_frame3, 'ico/line.png', self.draw_line, "Draw Line")
         rectangle_button = self.create_button(left_frame3, 'ico/rectangle.png', self.draw_rectangle, "Draw Rectangle")
         circle_button = self.create_button(left_frame3, 'ico/circle.png', self.draw_circle, "Draw Circle")
@@ -210,9 +212,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.pack(pady=5)
         self.palet.bind("<Button-1>", self.select_palet)
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
-        
-        filph_button = self.create_button(left_frame3, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_l_button = self.create_button(left_frame3, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
         self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
         self.thumbnail_canvas.pack(side="bottom", fill="y", padx=0)
@@ -629,7 +628,6 @@ class ImageEditorApp(BidFile, ActionState):
         
         # Redraw grid if necessary
         self.draw_grill(change=False)
-
 
     def update_buttons_state(self):
         """Update the state of buttons."""
@@ -1264,6 +1262,9 @@ class ImageEditorApp(BidFile, ActionState):
             self.bool_grid = not self.bool_grid
 
     def undo_action(self, event=None):
+        self.restore_state()
+    
+    def redo_action(self, event=None):
         self.restore_state()
 
     def save_state(self):
