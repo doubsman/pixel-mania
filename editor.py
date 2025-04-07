@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 from tkinter import filedialog, Frame
 from tkinter.messagebox import askyesno
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageDraw
 import numpy as np
 import os
 import subprocess
@@ -67,10 +67,14 @@ class ImageEditorApp(BidFile, ActionState):
         # Configure main window first
         self.root.title(self.tittle)
         self.root.geometry("1820x1560")
-        self.root.resizable(width=False, height=False)
+        self.root.resizable(width=True, height=True)
+        self.root.minsize(1820, 1560)  # Taille minimale
         
         # Intercept window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # Bind F11 for fullscreen toggle
+        self.root.bind("<F11>", self.toggle_fullscreen)
 
         self.WIDTH = 1820-250-100
         self.HEIGHT = 1560-20-100
@@ -218,34 +222,22 @@ class ImageEditorApp(BidFile, ActionState):
         self.size_clipboard_label.pack(side="bottom")
 
         # The right canvas for displaying the image
-        self.outercanvas = ttk.Canvas(self.root, width=self.WIDTH + 100, height=self.HEIGHT + 100, bg='#E0E0E0')
-        self.outercanvas.pack(expand="y", fill="y")
+        self.outercanvas = ttk.Canvas(self.root, bg='#E0E0E0')
+        self.outercanvas.pack(expand=True, fill="both")
 
         # Create a frame to contain the canvas and scrollbars
         self.canvas_frame = Frame(self.outercanvas)
-        
-        def update_window_position():
-            # Calculate center position
-            outer_width = self.outercanvas.winfo_width()
-            outer_height = self.outercanvas.winfo_height()
-            frame_width = self.canvas_frame.winfo_reqwidth()
-            frame_height = self.canvas_frame.winfo_reqheight()
-            
-            x = (outer_width - frame_width) // 2
-            y = (outer_height - frame_height) // 2
-            
-            self.outercanvas.coords(self.window_id, x, y)
         
         # Create window initially at (0,0)
         self.window_id = self.outercanvas.create_window(0, 0, window=self.canvas_frame, anchor="nw")
         
         # Update position after window is created
-        self.root.after(100, update_window_position)
+        self.root.after(100, self.update_window_position)
 
         # Create the scrollbars
         self.v_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical")
         self.h_scrollbar = ttk.Scrollbar(self.canvas_frame, orient="horizontal")
-        self.canvas = ttk.Canvas(self.canvas_frame, width=self.WIDTH, height=self.HEIGHT,
+        self.canvas = ttk.Canvas(self.canvas_frame,
                            bg='#E0E0E0',
                            border=2, relief="sunken",
                            xscrollcommand=self.h_scrollbar.set,
@@ -266,6 +258,13 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas_frame.grid_rowconfigure(0, weight=1)
         self.canvas_frame.grid_columnconfigure(0, weight=1)
 
+        # Bind window resize event
+        self.root.bind("<Configure>", self.on_window_resize)
+
+        # Create coordinates label on outercanvas
+        self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
+        self.coord_label_id = self.outercanvas.create_window(10, 10, window=self.coord_label, anchor="nw")
+
         # Bind mouse wheel events for scrolling
         self.canvas.bind("<Control-MouseWheel>", self.zoom)  # Zoom with Ctrl+Wheel
         self.canvas.bind("<MouseWheel>", self.on_mousewheel)  # Vertical scroll
@@ -274,6 +273,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
+        # Bind keyboard shortcuts
         self.root.bind("<Control-m>", self.open_carousselbid)
         self.root.bind("<Control-o>", self.open_bid)
         self.root.bind("<Control-s>", self.save_bid)
@@ -286,9 +286,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.create_bid()
         self.refresh_thumbnail()
 
-        # Create coordinates label on outercanvas
-        self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
-        self.outercanvas.create_window(self.WIDTH + 95, self.HEIGHT + 115, window=self.coord_label, anchor="se")
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
@@ -553,17 +550,37 @@ class ImageEditorApp(BidFile, ActionState):
             self.image_scale += 10
         elif event.num == 5 or event.delta < 0:
             self.image_scale -= 10
+
+        # Limit minimum Zoom
         if self.image_scale < self.image_scale_default:
             self.image_scale = self.image_scale_default
+
         zoom_factor = self.image_scale / old_scale
+        
+        # Sauvegarder la position actuelle du curseur
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
+        
+        # Mettre à jour la taille de l'image et la grille
         self.draw_bidfile()
         self.refresh_image()
-        new_x = (canvas_x * zoom_factor - event.x) / (self.grid_width * self.image_scale)
-        new_y = (canvas_y * zoom_factor - event.y) / (self.grid_height * self.image_scale)
+        
+        # Mettre à jour la région de défilement
+        image_width = self.grid_width * self.image_scale
+        image_height = self.grid_height * self.image_scale
+        self.canvas.config(scrollregion=(0, 0, image_width, image_height))
+        
+        # Calculer la nouvelle position de vue pour centrer sur le curseur
+        new_x = (canvas_x * zoom_factor - event.x) / image_width
+        new_y = (canvas_y * zoom_factor - event.y) / image_height
+        
+        # Appliquer le nouveau zoom et la nouvelle position
         self.canvas.xview_moveto(new_x)
         self.canvas.yview_moveto(new_y)
+        
+        # Redessiner la grille avec la nouvelle échelle
+        if self.bool_grid:
+            self.draw_grill(change=False)
 
     def on_mousewheel(self, event):
         """Handle vertical scrolling"""
@@ -611,11 +628,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.update_buttons_state()
         
         # Redraw grid if necessary
-        if self.bool_grid:
-            self.canvas.delete('grid_line_w')
-            self.canvas.delete('grid_line_h')
-            self.bool_grid = False
-            self.draw_grill()
+        self.draw_grill(change=False)
+
 
     def update_buttons_state(self):
         """Update the state of buttons."""
@@ -1217,33 +1231,37 @@ class ImageEditorApp(BidFile, ActionState):
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
             self.refresh_image()
 
-    def draw_grill(self, event=None):
-        if not self.bool_grid:
-            width_image = self.grid_width * self.image_scale
-            height_image = self.grid_height * self.image_scale
-            # Draw vertical lines
+    def draw_grill(self, event=None, change=True):
+        if self.bool_grid:
+            self.canvas.delete('grid_line_w')
+            self.canvas.delete('grid_line_h')
+
+            # Dessiner les lignes verticales
             for x in range(0, self.grid_width + 1):
                 line_x = x * self.image_scale
                 if x % 5 == 0:
                     width = 2
                 else:
                     width = 1
-                self.canvas.create_line(line_x, -1, line_x, height_image + 1, 
-                                         fill='gray', width=width, dash=(2,2), tags='grid_line_w')
-            # Draw horizontal lines
+                self.canvas.create_line(line_x, -1, line_x, self.grid_height * self.image_scale + 1, 
+                                     fill='gray', width=width, dash=(2,2), tags='grid_line_w')
+            
+            # Dessiner les lignes horizontales
             for y in range(0, self.grid_height + 1):
                 line_y = y * self.image_scale
                 if y % 5 == 0:
-                    width=2
+                    width = 2
                 else:
-                    width=1
-                self.canvas.create_line(-1, line_y, width_image + 1, line_y, 
-                                         fill='gray', width=width, dash=(2,2), tags='grid_line_h')
-            self.bool_grid = True
+                    width = 1
+                self.canvas.create_line(-1, line_y, self.grid_width * self.image_scale + 1, line_y, 
+                                     fill='gray', width=width, dash=(2,2), tags='grid_line_h')
         else:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
             self.bool_grid = False
+
+        if change:
+            self.bool_grid = not self.bool_grid
 
     def undo_action(self, event=None):
         self.restore_state()
@@ -1290,6 +1308,75 @@ class ImageEditorApp(BidFile, ActionState):
         if hasattr(self, 'splash'):
             self.splash.destroy()
             delattr(self, 'splash')
+
+    def toggle_fullscreen(self, event=None):
+        """Toggle fullscreen mode"""
+        self.root.attributes('-fullscreen', not self.root.attributes('-fullscreen'))
+
+    def on_window_resize(self, event):
+        """Handle window resize event"""
+        if event.widget == self.root:
+            # Update canvas size
+            self.WIDTH = self.root.winfo_width() - 250 - 100
+            self.HEIGHT = self.root.winfo_height() - 20 - 100
+            
+            # Recalculate the default image scale based on the new window size
+            self.image_scale_default = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
+            self.image_scale = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
+            
+            # Mettre à jour la taille de l'image et la région de défilement
+            if hasattr(self, 'image'):
+                image_width = self.grid_width * self.image_scale
+                image_height = self.grid_height * self.image_scale
+                self.canvas.config(scrollregion=(0, 0, image_width, image_height))
+                self.draw_bidfile()
+                self.refresh_image()
+                
+                # Redessiner la grille si elle est active
+                if self.bool_grid:
+                    self.draw_grill(change=False)
+            
+            # Update canvas position and size
+            self.update_window_position()
+
+            # Update coordinate label position
+            self.outercanvas.coords(self.coord_label_id, 10, 10)
+
+            # Update scrollbars visibility
+            if image_width > self.canvas.winfo_width() or image_height > self.canvas.winfo_height():
+                self.v_scrollbar.grid(row=0, column=1, sticky="ns")
+                self.h_scrollbar.grid(row=1, column=0, sticky="ew")
+                self.canvas.bind("<MouseWheel>", self.on_mousewheel)
+                self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)
+            else:
+                self.v_scrollbar.grid_remove()
+                self.h_scrollbar.grid_remove()
+                self.canvas.unbind("<MouseWheel>")
+                self.canvas.unbind("<Shift-MouseWheel>")
+        
+        if event.widget == self.canvas:
+            if self.bool_grid:
+                self.draw_grill(change=False)
+
+    def update_window_position(self):
+        """Update the position of the canvas frame in the outercanvas"""
+        # Calculer la taille des carrés
+        cell_size = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
+        
+        # Calculer la taille du canvas de dessin
+        canvas_width = self.grid_width * cell_size
+        canvas_height = self.grid_height * cell_size
+        
+        # Centrer le canvas dans l'outercanvas
+        x = (100 + self.WIDTH - canvas_width) // 2
+        y = (100 + self.HEIGHT - canvas_width) // 2
+
+        # Mettre à jour la position et la taille du canvas frame
+        self.outercanvas.coords(self.window_id, x, y)
+        self.canvas_frame.config(width=canvas_width, height=canvas_height)
+        
+        # Mettre à jour la taille du canvas de dessin
+        self.canvas.config(width=canvas_width, height=canvas_height)
 
 
 if __name__ == "__main__":
