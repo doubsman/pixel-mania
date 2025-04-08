@@ -62,7 +62,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Pixel Mania : Bid Editor v1.00rc4"
+        self.tittle = "Pixel Mania : Bid Editor v1.00Alpha"
         
         # Configure main window first
         self.root.title(self.tittle)
@@ -183,11 +183,11 @@ class ImageEditorApp(BidFile, ActionState):
         self.paste_button = self.create_button(left_frame2, 'ico/paste.png', self.paste_cells, "Cut")
         self.fill_button = self.create_button(left_frame2, 'ico/fill.png', self.fill_cells, "Fill Selecion")
         self.grad_button = self.create_button(left_frame2, 'ico/gradient.png', self.gradient_cells, "Gradient Selecion")
-        inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
-        filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
-        filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
-        rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
-        rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
+        self.inverse_button = self.create_button(left_frame2, 'ico/inverser.png', self.inverse_colors, "Inverse Colors")
+        self.filpv_button = self.create_button(left_frame2, 'ico/flip-v.png', self.flipv_cells, "Flip V")
+        self.filph_button = self.create_button(left_frame2, 'ico/flip-h.png', self.fliph_cells, "Flip H")
+        self.rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
+        self.rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
         save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
@@ -222,6 +222,38 @@ class ImageEditorApp(BidFile, ActionState):
         # The right canvas for displaying the image
         self.outercanvas = ttk.Canvas(self.root, bg='#E0E0E0')
         self.outercanvas.pack(expand=True, fill="both")
+
+        # Create zoom control frame in top right corner
+        style = ttk.Style()
+        style.configure('Zoom.TFrame', background='#E0E0E0')
+        style.configure('Zoom.Horizontal.TScale', background='#E0E0E0', troughcolor='#E0E0E0')
+        zoom_frame = ttk.Frame(self.outercanvas, style='Zoom.TFrame')
+        self.zoom_frame_id = self.outercanvas.create_window(
+            self.outercanvas.winfo_reqwidth() - 200, 10,  # Position initiale
+            window=zoom_frame,
+            anchor="ne"
+        )
+
+        # Add zoom icon
+        style = ttk.Style()
+        style.configure('Custom.Horizontal.TScale', background='#E0E0E0')
+        zoom_icon = ttk.PhotoImage(file=resource_path(os.path.join('ico', 'zoom.png'))).subsample(24, 24)
+        zoom_label = ttk.Label(zoom_frame, image=zoom_icon, background='#E0E0E0')
+        zoom_label.image = zoom_icon
+        zoom_label.pack(side="left", padx=5)
+
+        # Add zoom scale
+        self.zoom_scale = ttk.Scale(
+            zoom_frame,
+            from_=0,
+            to=100,
+            orient="horizontal",
+            length=150,
+            value=0,
+            command=self.on_zoom_scale,
+            style='Custom.Horizontal.TScale')
+
+        self.zoom_scale.pack(side="left", padx=5)
 
         # Create a frame to contain the canvas and scrollbars
         self.canvas_frame = Frame(self.outercanvas)
@@ -280,6 +312,8 @@ class ImageEditorApp(BidFile, ActionState):
         self.root.bind("<Control-x>", lambda event: self.copy_cells(True))
         self.root.bind("<Control-v>", self.paste_cells)
         self.root.bind("<Control-g>", self.draw_grill)
+        self.root.bind("<Control-a>", self.select_all_cells)
+        self.root.bind("<Delete>", self.delete_cells)
 
         self.create_bid()
         self.refresh_thumbnail()
@@ -436,6 +470,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.clipboard.insert_symbol(symbol)  # Update clipboard with new symbol
             self.refresh_thumbnail()
             self.paste_cells()
+            #self.update_buttons_state()
             dialog.destroy()
             
         carrousel = SymbolCarrousel(dialog, callback=on_symbol_selected)
@@ -545,21 +580,30 @@ class ImageEditorApp(BidFile, ActionState):
     def zoom(self, event):
         old_scale = self.image_scale
         if event.num == 4 or event.delta > 0:
-            self.image_scale += 10
+            # Limit maximum zoom to 5x the default scale
+            if self.image_scale < self.image_scale_default * 5:
+                self.image_scale += 10
         elif event.num == 5 or event.delta < 0:
             self.image_scale -= 10
 
         # Limit minimum Zoom
         if self.image_scale < self.image_scale_default:
             self.image_scale = self.image_scale_default
+        # Limit maximum Zoom
+        elif self.image_scale > self.image_scale_default * 5:
+            self.image_scale = self.image_scale_default * 5
 
         zoom_factor = self.image_scale / old_scale
         
-        # Sauvegarder la position actuelle du curseur
+        # Update zoom scale to match current zoom level
+        scale_value = ((self.image_scale / self.image_scale_default) - 1) / 5 * 100
+        self.zoom_scale.set(scale_value)
+
+        # Save current cursor position
         canvas_x = self.canvas.canvasx(event.x)
         canvas_y = self.canvas.canvasy(event.y)
         
-        # Mettre à jour la taille de l'image et la grille
+        # Update image size and grid
         self.draw_bidfile()
         self.refresh_image()
         
@@ -579,6 +623,29 @@ class ImageEditorApp(BidFile, ActionState):
         # Redessiner la grille avec la nouvelle échelle
         if self.bool_grid:
             self.draw_grill(change=False)
+
+    def on_zoom_scale(self, value):
+        try:
+            value = float(value)
+            # Calculate new scale: 0=default scale, 100=5x default scale
+            new_scale = int(self.image_scale_default * (1 + (value/100) * 4))
+            old_scale = self.image_scale
+            self.image_scale = new_scale
+            
+            # Update image with new scale
+            self.draw_bidfile()
+            self.refresh_image()
+            
+            # Update scroll region
+            image_width = self.grid_width * self.image_scale
+            image_height = self.grid_height * self.image_scale
+            self.canvas.config(scrollregion=(0, 0, image_width, image_height))
+            
+            # Redraw grid if necessary
+            if self.bool_grid:
+                self.draw_grill(change=False)
+        except ValueError:
+            pass
 
     def on_mousewheel(self, event):
         """Handle vertical scrolling"""
@@ -659,6 +726,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_image_button.config(state=ttk.NORMAL)
         else:
             self.save_image_button.config(state=ttk.DISABLED)
+
         if self.undo_stack:
             self.undo_button.config(state=ttk.NORMAL)
         else:
@@ -667,6 +735,20 @@ class ImageEditorApp(BidFile, ActionState):
             self.redo_button.config(state=ttk.NORMAL)
         else:
             self.redo_button.config(state=ttk.DISABLED)
+        
+        if not len(self.canvas.gettags("cell_select")) > 0 and \
+            not (hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0):
+            self.inverse_button.config(state=ttk.DISABLED)
+            self.filpv_button.config(state=ttk.DISABLED)
+            self.filph_button.config(state=ttk.DISABLED)
+            self.rotate_r_button.config(state=ttk.DISABLED)
+            self.rotate_l_button.config(state=ttk.DISABLED)
+        else:
+            self.inverse_button.config(state=ttk.NORMAL)
+            self.filpv_button.config(state=ttk.NORMAL)
+            self.filph_button.config(state=ttk.NORMAL)
+            self.rotate_r_button.config(state=ttk.NORMAL)
+            self.rotate_l_button.config(state=ttk.NORMAL)
 
     def center_image_on_canvas(self, canvas, image):
         photo = ImageTk.PhotoImage(image)
@@ -1037,9 +1119,8 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.canvas.delete("cell_select")
         if self.grid_sel_cells[self.grid_y, self.grid_x] == 1:
-            if not self.bool_mode_add_selection:
-                self.grid_sel_cells[self.grid_y, self.grid_x] = 0
-                self.canvas.delete(f"cell_select{self.grid_x}_{self.grid_y}")
+            self.grid_sel_cells[self.grid_y, self.grid_x] = 0
+            self.canvas.delete(f"cell_select{self.grid_x}_{self.grid_y}")
         else:
             self.grid_sel_cells[self.grid_y, self.grid_x] = 1
             x1, y1 = (self.grid_x * self.image_scale), (self.grid_y * self.image_scale)
@@ -1086,10 +1167,10 @@ class ImageEditorApp(BidFile, ActionState):
         self.select_adjacent_cells(x, y + 1, color)      # Down
         self.select_adjacent_cells(x - 1, y, color)      # Left
         self.select_adjacent_cells(x + 1, y, color)      # Right
-        self.select_adjacent_cells(x - 1, y - 1, color)  # Up-Left
-        self.select_adjacent_cells(x + 1, y - 1, color)  # Up-Right
-        self.select_adjacent_cells(x - 1, y + 1, color)  # Down-Left
-        self.select_adjacent_cells(x + 1, y + 1, color)  # Down-Right
+        #self.select_adjacent_cells(x - 1, y - 1, color)  # Up-Left
+        #self.select_adjacent_cells(x + 1, y - 1, color)  # Up-Right
+        #self.select_adjacent_cells(x - 1, y + 1, color)  # Down-Left
+        #self.select_adjacent_cells(x + 1, y + 1, color)  # Down-Right
 
     def update_magic_selection(self):
         for y in range(self.grid_height):
@@ -1098,6 +1179,43 @@ class ImageEditorApp(BidFile, ActionState):
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        self.update_buttons_state()
+
+    def delete_cells(self, event=None):
+        """Delete selected cells."""
+        self.save_state()        
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                if self.grid_sel_cells[y, x] == 1:
+                    self.draw_cell(x, y, 0, 0)
+                    self.grid_bid[y][x] = 0
+                    self.grid_colors[y][x] = 0
+        self.refresh_image()
+        self.canvas.delete(f"cell_select")
+        self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+        # Update buttons state to reflect the selection
+        self.update_buttons_state()
+
+    def select_all_cells(self, event=None):
+        """Select all cells in the grid."""
+        # Reset existing selection
+        self.grid_sel_cells = np.ones((self.grid_height, self.grid_width), dtype=int)
+        self.canvas.delete("cell_select")
+        
+        # Create selection rectangles for all cells
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                x1, y1 = (x * self.image_scale), (y * self.image_scale)
+                x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
+                self.canvas.create_rectangle(
+                    x1, y1, x2, y2, 
+                    fill="", 
+                    outline="red", 
+                    width=2, 
+                    dash=(4,4), 
+                    tags=['cell_select', f"cell_select{x}_{y}"]
+                )
+        # Update buttons state to reflect the selection
         self.update_buttons_state()
 
     def copy_cells(self, cut=False):
@@ -1233,7 +1351,10 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_state()
 
     def draw_grill(self, event=None, change=True):
-        if self.bool_grid or not change:
+        if change:
+            self.bool_grid = not self.bool_grid
+
+        if self.bool_grid:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
 
@@ -1259,10 +1380,8 @@ class ImageEditorApp(BidFile, ActionState):
         else:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
-            self.bool_grid = False
 
-        if change:
-            self.bool_grid = not self.bool_grid
+
 
     def undo_action(self, event=None):
         action = self.undo_actionstate()
@@ -1365,6 +1484,13 @@ class ImageEditorApp(BidFile, ActionState):
         if event.widget == self.canvas:
             if self.bool_grid:
                 self.draw_grill(change=False)
+        
+        if hasattr(self, 'zoom_frame_id'):
+            self.outercanvas.coords(
+                self.zoom_frame_id,
+                self.outercanvas.winfo_width() - 10,
+                10
+            )
 
     def update_window_position(self):
         """Update the position of the canvas frame in the outercanvas"""

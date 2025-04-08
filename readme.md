@@ -1,6 +1,6 @@
 ## todo
-* redo button
-* zoom problem
+* redo recurse
+
 
 ______________________________________________________________
 # Bid 2 Image
