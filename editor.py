@@ -62,7 +62,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Pixel Mania : Bid Editor v1.00Alpha"
+        self.tittle = "Pixel Mania : Bid Editor v1.00"
         
         # Configure main window first
         self.root.title(self.tittle)
@@ -73,11 +73,21 @@ class ImageEditorApp(BidFile, ActionState):
         # Intercept window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # Bind F11 for fullscreen toggle
+        # Bind keyboard shortcuts
+        self.root.bind("<Control-m>", self.open_carousselbid)
+        self.root.bind("<Control-o>", self.open_bid)
+        self.root.bind("<Control-s>", self.save_bid)
+        self.root.bind("<Control-z>", self.undo_action)
+        self.root.bind("<Control-c>", lambda event: self.copy_cells(False))
+        self.root.bind("<Control-x>", lambda event: self.copy_cells(True))
+        self.root.bind("<Control-v>", self.paste_cells)
+        self.root.bind("<Control-g>", self.draw_grill)
+        self.root.bind("<Control-a>", self.select_all_cells)
+        self.root.bind("<Delete>", self.delete_cells)
         self.root.bind("<F11>", self.toggle_fullscreen)
 
-        self.WIDTH = 1820-250-100
-        self.HEIGHT = 1560-20-100
+        self.with_zonecanvas = 1820-250-100
+        self.height_zonecanvas = 1560-20-100
         self.file_path = ""
         # Canvas Grid Mode
         self.bool_grid = True
@@ -177,6 +187,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.undo_button = self.create_button(left_frame2, 'ico/undo.png', self.undo_action, "Cancel")
         select_button = self.create_button(left_frame2, 'ico/selection.png', self.mode_select, "Cell Selecion")
         area_button = self.create_button(left_frame2, 'ico/square.png', self.mode_area, "Area Selecion")
+        lasso_button = self.create_button(left_frame2, 'ico/lasso.png', self.mode_lasso, "Lasso Selecion")
         magic_button = self.create_button(left_frame2, 'ico/magic.png', self.mode_magicselect, "Magic Selecion")
         self.copy_button = self.create_button(left_frame2, 'ico/copy.png', self.copy_cells, "Copy")
         self.cut_button = self.create_button(left_frame2, 'ico/cut.png', lambda: self.copy_cells(True), "Cut")
@@ -303,18 +314,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<Button-5>", self.zoom)
         self.canvas.bind("<Motion>", self.update_coords_cells)
 
-        # Bind keyboard shortcuts
-        self.root.bind("<Control-m>", self.open_carousselbid)
-        self.root.bind("<Control-o>", self.open_bid)
-        self.root.bind("<Control-s>", self.save_bid)
-        self.root.bind("<Control-z>", self.undo_action)
-        self.root.bind("<Control-c>", lambda event: self.copy_cells(False))
-        self.root.bind("<Control-x>", lambda event: self.copy_cells(True))
-        self.root.bind("<Control-v>", self.paste_cells)
-        self.root.bind("<Control-g>", self.draw_grill)
-        self.root.bind("<Control-a>", self.select_all_cells)
-        self.root.bind("<Delete>", self.delete_cells)
-
         self.create_bid()
         self.refresh_thumbnail()
 
@@ -332,7 +331,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_bid()
             self.file_path = bid_path
             self.root.title(f'{self.tittle} [{self.file_path}]')  
-            self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
+            self.load_bidfile(self.file_path, self.with_zonecanvas, self.height_zonecanvas)
             self.init_bid()      
 
     def open_carousselbid(self, event=None):
@@ -354,7 +353,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_bid()
             self.file_path = bid_file
             self.root.title(f'{self.tittle} [{self.file_path}]')  
-            self.load_bidfile(self.file_path, self.WIDTH, self.HEIGHT)
+            self.load_bidfile(self.file_path, self.with_zonecanvas, self.height_zonecanvas)
             self.init_bid()
             dialog.destroy()
             
@@ -397,7 +396,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.save_bid()
         self.root.title(f'{self.tittle} : [NEW]')
         self.file_path = ''
-        self.new_bid(self.WIDTH, self.HEIGHT)
+        self.new_bid(self.with_zonecanvas, self.height_zonecanvas)
         self.init_bid()
     
     def init_bid(self):
@@ -419,13 +418,23 @@ class ImageEditorApp(BidFile, ActionState):
         self.mode_draw()
 
     def save_bid(self, event=None):
-        if self.file_path == '' and self.bool_backup:
-            self.file_path = filedialog.asksaveasfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")])
-        self.write_bid()
+        if self.file_path == '':
+            self.saveas_bid()
+        elif self.bool_backup:
+            self.write_bid()
 
     def saveas_bid(self):
         if self.bool_backup or self.file_path != '':
             self.file_path = filedialog.asksaveasfilename(title="Save Bid File", filetypes=[("Bid Files", "*.bid")])
+            if self.file_path != '':
+                if not self.file_path.endswith('.bid'):
+                    self.file_path += '.bid'
+                # Check if file already exists
+                if os.path.isfile(self.file_path):
+                    # Ask for confirmation to overwrite
+                    overwrite = askyesno("Overwrite File", f"The file '{self.file_path}' already exists. Do you want to overwrite it?")
+                    if not overwrite:
+                        return
             self.write_bid()
     
     def write_bid(self):
@@ -607,20 +616,20 @@ class ImageEditorApp(BidFile, ActionState):
         self.draw_bidfile()
         self.refresh_image()
         
-        # Mettre à jour la région de défilement
+        # Update scroll region
         image_width = self.grid_width * self.image_scale
         image_height = self.grid_height * self.image_scale
         self.canvas.config(scrollregion=(0, 0, image_width, image_height))
         
-        # Calculer la nouvelle position de vue pour centrer sur le curseur
+        # Calculate new view position to center on cursor
         new_x = (canvas_x * zoom_factor - event.x) / image_width
         new_y = (canvas_y * zoom_factor - event.y) / image_height
         
-        # Appliquer le nouveau zoom et la nouvelle position
+        # Apply new zoom and position
         self.canvas.xview_moveto(new_x)
         self.canvas.yview_moveto(new_y)
         
-        # Redessiner la grille avec la nouvelle échelle
+        # Redraw the grid with the new scale
         if self.bool_grid:
             self.draw_grill(change=False)
 
@@ -806,10 +815,10 @@ class ImageEditorApp(BidFile, ActionState):
     def update_grid_size(self, new_width=None, new_height=None):
         """Update the size of the grid"""
         if self.file_path == '' and not self.bool_backup:
-            self.new_bid(self.WIDTH, self.HEIGHT, new_width or self.grid_width, new_height or self.grid_height)
+            self.new_bid(self.with_zonecanvas, self.height_zonecanvas, new_width or self.grid_width, new_height or self.grid_height)
             self.init_bid()
         else:
-            self.change_bid_size(self.WIDTH, self.HEIGHT, new_width or self.grid_width, new_height or self.grid_height)
+            self.change_bid_size(self.with_zonecanvas, self.height_zonecanvas, new_width or self.grid_width, new_height or self.grid_height)
             self.init_bid()
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
 
@@ -1104,6 +1113,78 @@ class ImageEditorApp(BidFile, ActionState):
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
         self.update_buttons_state()
 
+    def mode_lasso(self):
+        self.bool_paste_mode = False
+        if self.image_over_id !=0:
+            self.canvas.delete(self.image_over_id)
+            self.image_over_id = 0
+        self.canvas.unbind("<Button-1>")
+        self.canvas.bind("<ButtonPress-1>", self.start_lasso)
+        self.canvas.bind("<B1-Motion>", self.update_lasso)
+        self.canvas.bind("<ButtonRelease-1>", self.end_lasso)
+    
+    def start_lasso(self, event):   
+        """Start the lasso selection."""
+        if not self.bool_mode_add_selection:
+            self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
+            self.canvas.delete("cell_select")
+        self.bool_paste_mode = False
+        self.selection_start = (event.x, event.y)
+        self.selection_end = (event.x, event.y)
+        outline_color = "green" if self.bool_mode_add_selection else "blue"
+        self.selection_rect = self.canvas.create_polygon(
+            self.selection_start[0], self.selection_start[1],
+            outline=outline_color, fill="", dash=(4, 4), tags="selection_rect"
+        )
+        self.canvas.bind("<Motion>", self.update_lasso)
+        self.canvas.bind("<Leave>", self.end_lasso)
+    
+    def update_lasso(self, event):
+        """Update the lasso selection."""
+        self.selection_end = (event.x, event.y)
+        coords = self.canvas.coords(self.selection_rect)
+        coords.append(event.x)
+        coords.append(event.y)
+        self.canvas.coords(self.selection_rect, *coords)
+        self.canvas.bind("<Motion>", self.update_lasso)
+        self.canvas.bind("<Leave>", self.end_lasso)
+
+    def end_lasso(self, event):
+        """End the lasso selection."""
+        self.selection_end = (event.x, event.y)
+        coords = self.canvas.coords(self.selection_rect)
+        # Get the polygon points
+        polygon_points = [(coords[i], coords[i+1]) for i in range(0, len(coords), 2)]
+        # Check if each cell is inside the polygon
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                cell_center = ((x + 0.5) * self.image_scale, (y + 0.5) * self.image_scale)
+                if self.is_point_in_polygon(cell_center, polygon_points):
+                    self.grid_sel_cells[y, x] = 1
+                    x1, y1 = (x * self.image_scale), (y * self.image_scale)
+                    x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        self.update_buttons_state()
+        self.canvas.delete("selection_rect")
+    
+    def is_point_in_polygon(self, point, polygon):
+        """Check if a point is inside a polygon using the ray-casting algorithm."""
+        x, y = point
+        inside = False
+        n = len(polygon)
+        p1x, p1y = polygon[0]
+        for i in range(n + 1):
+            p2x, p2y = polygon[i % n]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+    
     def mode_select(self):
         self.canvas.unbind("<ButtonPress-1>")
         self.canvas.unbind("<B1-Motion>")
@@ -1358,7 +1439,7 @@ class ImageEditorApp(BidFile, ActionState):
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
 
-            # Dessiner les lignes verticales
+            # Drawing vertical lines
             for x in range(0, self.grid_width + 1):
                 line_x = x * self.image_scale
                 if x % 5 == 0:
@@ -1368,7 +1449,7 @@ class ImageEditorApp(BidFile, ActionState):
                 self.canvas.create_line(line_x, -1, line_x, self.grid_height * self.image_scale + 1, 
                                      fill='gray', width=width, dash=(2,2), tags='grid_line_w')
             
-            # Dessiner les lignes horizontales
+            # Drawing horizontal lines
             for y in range(0, self.grid_height + 1):
                 line_y = y * self.image_scale
                 if y % 5 == 0:
@@ -1376,7 +1457,7 @@ class ImageEditorApp(BidFile, ActionState):
                 else:
                     width = 1
                 self.canvas.create_line(-1, line_y, self.grid_width * self.image_scale + 1, line_y, 
-                                     fill='gray', width=width, dash=(2,2), tags='grid_line_h')
+                                     fill='gray', width=width, dash=(3,3), tags='grid_line_h')
         else:
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
@@ -1424,11 +1505,7 @@ class ImageEditorApp(BidFile, ActionState):
         if self.bool_backup:
             if askyesno("Save", "There are unsaved changes. Do you want to save before quitting?"):
                 self.save_bid()
-                self.root.destroy()
-            else:
-                self.root.destroy()
-        else:
-            self.root.destroy()
+        self.root.destroy()
 
     def destroy_splash(self):
         """Destroy the splash screen if it exists"""
@@ -1443,48 +1520,40 @@ class ImageEditorApp(BidFile, ActionState):
     def on_window_resize(self, event):
         """Handle window resize event"""
         if event.widget == self.root:
-            # Update canvas size
-            self.WIDTH = self.root.winfo_width() - 250 - 100
-            self.HEIGHT = self.root.winfo_height() - 20 - 100
-            
-            # Recalculate the default image scale based on the new window size
-            self.image_scale_default = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
-            self.image_scale = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
-            
-            # Mettre à jour la taille de l'image et la région de défilement
-            if hasattr(self, 'image'):
-                image_width = self.grid_width * self.image_scale
-                image_height = self.grid_height * self.image_scale
-                self.canvas.config(scrollregion=(0, 0, image_width, image_height))
-                self.draw_bidfile()
-                self.refresh_image()
-                
-                # Redessiner la grille si elle est active
-                if self.bool_grid:
-                    self.draw_grill(change=False)
-            
-            # Update canvas position and size
-            self.update_window_position()
+            # Add a delay before updating the interface
+            if hasattr(self, '_resize_timer'):
+                self.root.after_cancel(self._resize_timer)
+            self._resize_timer = self.root.after(100, lambda: self._do_resize(event))
 
-            # Update coordinate label position
-            self.outercanvas.coords(self.coord_label_id, 10, 10)
-
-            # Update scrollbars visibility
-            if image_width > self.canvas.winfo_width() or image_height > self.canvas.winfo_height():
-                self.v_scrollbar.grid(row=0, column=1, sticky="ns")
-                self.h_scrollbar.grid(row=1, column=0, sticky="ew")
-                self.canvas.bind("<MouseWheel>", self.on_mousewheel)
-                self.canvas.bind("<Shift-MouseWheel>", self.on_shift_mousewheel)
-            else:
-                self.v_scrollbar.grid_remove()
-                self.h_scrollbar.grid_remove()
-                self.canvas.unbind("<MouseWheel>")
-                self.canvas.unbind("<Shift-MouseWheel>")
+    def _do_resize(self, event):
+        """Effectue la mise à jour après un délai"""
+        # Update canvas size
+        self.with_zonecanvas = self.root.winfo_width() - 250 - 100
+        self.height_zonecanvas = self.root.winfo_height() - 20 - 100
         
-        if event.widget == self.canvas:
+        # Recalculate the default image scale based on the new window size
+        self.image_scale_default = min(self.with_zonecanvas // self.grid_width, self.height_zonecanvas // self.grid_height)
+        self.image_scale = min(self.with_zonecanvas // self.grid_width, self.height_zonecanvas // self.grid_height)
+        
+        # Update image size and scroll region
+        if hasattr(self, 'image'):
+            image_width = self.grid_width * self.image_scale
+            image_height = self.grid_height * self.image_scale
+            self.canvas.config(scrollregion=(0, 0, image_width, image_height))
+            self.draw_bidfile()
+            self.refresh_image()
+            
+            # Redraw grid if active
             if self.bool_grid:
                 self.draw_grill(change=False)
         
+        # Update canvas position and size
+        self.update_window_position()
+
+        # Update coordinate label position
+        self.outercanvas.coords(self.coord_label_id, 10, 10)
+
+        # Update zoom frame position
         if hasattr(self, 'zoom_frame_id'):
             self.outercanvas.coords(
                 self.zoom_frame_id,
@@ -1494,22 +1563,22 @@ class ImageEditorApp(BidFile, ActionState):
 
     def update_window_position(self):
         """Update the position of the canvas frame in the outercanvas"""
-        # Calculer la taille des carrés
-        cell_size = min(self.WIDTH // self.grid_width, self.HEIGHT // self.grid_height)
+        # Calculate the size of the squares
+        cell_size = min(self.with_zonecanvas // self.grid_width, self.height_zonecanvas // self.grid_height)
         
-        # Calculer la taille du canvas de dessin
+        # Calculate canvas size
         canvas_width = self.grid_width * cell_size
         canvas_height = self.grid_height * cell_size
         
-        # Centrer le canvas dans l'outercanvas
-        x = (100 + self.WIDTH - canvas_width) // 2
-        y = (100 + self.HEIGHT - canvas_width) // 2
+        # Center canvas in outercanvas
+        x = (100 + self.with_zonecanvas - canvas_width) // 2
+        y = (100 + self.height_zonecanvas - canvas_width) // 2
 
-        # Mettre à jour la position et la taille du canvas frame
+        # Update canvas frame position and size
         self.outercanvas.coords(self.window_id, x, y)
         self.canvas_frame.config(width=canvas_width, height=canvas_height)
         
-        # Mettre à jour la taille du canvas de dessin
+        # Update drawing canvas size
         self.canvas.config(width=canvas_width, height=canvas_height)
 
 
