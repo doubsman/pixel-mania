@@ -11,8 +11,8 @@ class SplashScreen(ttk.Toplevel):
         self.overrideredirect(True)
         
         # Set splash dimensions
-        width = 400
-        height = 330
+        width = 422
+        height = 370
         
         # Load and display splash image
         splash_image = Image.open(os.path.join('ico', 'splash.png'))
@@ -48,8 +48,8 @@ class SplashScreen(ttk.Toplevel):
         parent_height = self.master.winfo_height()
         
         # Calculate position
-        width = 400
-        height = 400
+        width = 422
+        height = 370
         x = parent_x + (parent_width - width) // 2
         y = parent_y + (parent_height - height) // 2
         

@@ -32,6 +32,13 @@ class BidFile(Cells):
             self.grid_colors = np.genfromtxt(self.path_color, delimiter=1, dtype=int, ndmin=2)
         else:
             self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
+            #browse self.grid_bid and define colors, set value=5 (black) if shape <>0
+            for row in range(self.grid_height):
+                for column in range(self.grid_width):
+                    if self.grid_bid[row][column] > 0:
+                        self.grid_colors[row][column] = 5
+            
+    
         self.draw_bidfile()
         return self.image
 

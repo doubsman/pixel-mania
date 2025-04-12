@@ -452,18 +452,9 @@ class BidCarrousel(ttk.Frame):
             
     def create_thumbnail(self, bid_file):
         """Create a thumbnail for a .bid file"""
-        # Search for the corresponding PNG file
-        grid_bid = np.genfromtxt(os.path.join(self.bid_dir, bid_file), delimiter=1, dtype=int, ndmin=2)
-        grid_width = len(grid_bid[0])
-        grid_height = int(grid_bid.size / grid_width)
-        png_file = bid_file.replace('.bid', f'_{grid_width}x{grid_height}.png')
-        png_path = os.path.join(self.bid_dir, png_file)
-            
-        # Load the image
-        try:
-            thumbnail = Image.open(png_path)
-        except:
-            return
+        # drauw bid_file to thumbnail
+        my_bid = BidFile()
+        thumbnail = my_bid.load_bidfile(os.path.join(self.bid_dir, bid_file))
             
         # Resize the image
         ratio = thumbnail.width / thumbnail.height

@@ -16,6 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
+VERSION='1.01'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
@@ -62,7 +63,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = "Pixel Mania : Bid Editor v1.00"
+        self.tittle = f"Pixel Mania : Bid Editor v{VERSION}"
         
         # Configure main window first
         self.root.title(self.tittle)
@@ -316,7 +317,6 @@ class ImageEditorApp(BidFile, ActionState):
 
         self.create_bid()
         self.refresh_thumbnail()
-
 
     def create_button(self, parent, image_path, command, text="", side='top', subsample=12, pady=5):
         image = ttk.PhotoImage(file=resource_path(os.path.join('ico', os.path.basename(image_path)))).subsample(subsample, subsample)
@@ -835,8 +835,14 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_y = self.grid_height-1
         if self.grid_x >= self.grid_width:
             self.grid_x = self.grid_width-1
+        if self.grid_y < 0:
+            self.grid_y = 0
+        if self.grid_x < 0:
+            self.grid_x = 0
+                
         self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
 
+        # Update the position of the image overlay
         if self.bool_paste_mode and len(self.grid_clipboard) > 0:
             # Determine the position to paste the cells
             grid_clipboard_x = int((self.clipboard.max_x - self.clipboard.min_x)/2)
@@ -970,6 +976,8 @@ class ImageEditorApp(BidFile, ActionState):
                     self.grid_bid[y, x] = self.current_select_shape
                     self.grid_colors[y, x] = self.current_select_color
                     self.draw_cell(x, y, self.current_select_shape, self.current_select_color)
+        # Reset coordinates display
+        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
         # Refresh the image
         self.refresh_image()
         # Remove the selection rectangle
@@ -1091,12 +1099,24 @@ class ImageEditorApp(BidFile, ActionState):
             self.selection_start[0], self.selection_start[1],
             self.selection_end[0], self.selection_end[1]
         )
+        # Calculate rectangle dimensions in grid cells
+        start_x = min(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        start_y = min(self.selection_start[1], self.selection_end[1]) // self.image_scale
+        end_x = max(self.selection_start[0], self.selection_end[0]) // self.image_scale
+        end_y = max(self.selection_start[1], self.selection_end[1]) // self.image_scale
+        width = end_x - start_x + 1
+        height = end_y - start_y + 1
+        
+        # Update coordinates label with dimensions
+        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d}) ({width:02d}x{height:02d})")
 
     def end_selection(self, event):
         """End the selection rectangle."""
         self.selection_end = (event.x, event.y)
         self.update_selected_cells()
         self.canvas.delete("selection_rect")
+         # Reset coordinates display
+        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
 
     def update_selected_cells(self):
         """Update the selected cells."""
@@ -1572,7 +1592,7 @@ class ImageEditorApp(BidFile, ActionState):
         
         # Center canvas in outercanvas
         x = (100 + self.with_zonecanvas - canvas_width) // 2
-        y = (100 + self.height_zonecanvas - canvas_width) // 2
+        y = (100 + self.height_zonecanvas - canvas_height) // 2
 
         # Update canvas frame position and size
         self.outercanvas.coords(self.window_id, x, y)
