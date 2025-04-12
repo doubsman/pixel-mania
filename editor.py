@@ -343,7 +343,9 @@ class ImageEditorApp(BidFile, ActionState):
         dialog.geometry("1290x1290")
         dialog.transient(self.root)  # make the window modal
         dialog.grab_set()  # force focus on this window
-        dialog.resizable(width=False, height=True)
+        dialog.resizable(width=True, height=True)
+        dialog.bind('<F11>', lambda e: dialog.attributes('-fullscreen', not dialog.attributes('-fullscreen')))
+        dialog.bind('<Escape>', lambda e: dialog.attributes('-fullscreen', False))
         # Configure the window expansion
         dialog.grid_rowconfigure(0, weight=1)
         dialog.grid_columnconfigure(0, weight=1)

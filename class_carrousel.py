@@ -278,28 +278,39 @@ class BidCarrousel(ttk.Frame):
         self.filtered_bid_files = []  # Store filtered bid files
         self.loader_thread = None  # Store the loader thread reference
         self.no_files_label = None  # Store reference to the no files label
-        
-        # Create the main container
+        self.fullscreen = False  # Initialize fullscreen state
+
+        self.parent.bind('<F11>', self.Bidtoggle_fullscreen)
+        self.parent.attributes('-fullscreen', False)
+        self.parent.bind('<Escape>', lambda e: self.parent.attributes('-fullscreen', False))
+
+        # Create the main container with weights
         self.frame = ttk.Frame(self)
         self.frame.pack(fill=tk.BOTH, expand=True)
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.frame.grid_rowconfigure(1, weight=1)
         
         # Create the search frame
         self.search_frame = ttk.Frame(self.frame)
-        self.search_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        self.search_frame.grid(row=0, column=0, sticky='ew', padx=5, pady=5)
         
         # Create the search entry
         self.search_var = tk.StringVar()
         self.search_var.trace('w', self.filter_files)  # Call filter_files when text changes
         self.search_entry = ttk.Entry(self.search_frame, textvariable=self.search_var)
         self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
+
+        # Add fullscreen button
+        self.fullscreen_button = ttk.Button(self.search_frame, text="⛶", width=3, command=self.Bidtoggle_fullscreen)
+        self.fullscreen_button.pack(side=tk.RIGHT, padx=5)
+
         # Create the canvas for the thumbnails
         self.canvas = tk.Canvas(self.frame, bg='#E0E0E0')
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas.grid(row=1, column=0, sticky='nsew')
         
         # Create the vertical scrollbar
         self.scrollbar = ttk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.scrollbar.grid(row=1, column=1, sticky='ns')
         
         # Configure the canvas
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -452,7 +463,6 @@ class BidCarrousel(ttk.Frame):
             
     def create_thumbnail(self, bid_file):
         """Create a thumbnail for a .bid file"""
-        # drauw bid_file to thumbnail
         my_bid = BidFile()
         thumbnail = my_bid.load_bidfile(os.path.join(self.bid_dir, bid_file))
             
@@ -472,13 +482,17 @@ class BidCarrousel(ttk.Frame):
         # Create the frame for the thumbnail
         thumb_frame = ttk.Frame(self.thumbnails_frame)
         
+        # Calculate the number of columns based on canvas width
+        canvas_width = self.canvas.winfo_width()
+        num_columns = max(1, canvas_width // (self.thumbnail_size + 10))
+        
         # Calculate the position (row and column)
         index = len(self.thumbnails)
-        row = index // 8  # 8 thumbnails per row
-        col = index % 8
+        row = index // num_columns
+        col = index % num_columns
         
         # Place the frame in the grid
-        thumb_frame.grid(row=row, column=col, padx=2, pady=2)  # Reduced padding for better spacing
+        thumb_frame.grid(row=row, column=col, padx=2, pady=2)
         
         # Create the label for the image
         label = ttk.Label(thumb_frame, image=photo)
@@ -510,6 +524,16 @@ class BidCarrousel(ttk.Frame):
         
     def on_canvas_configure(self, event):
         """Configure the width of the inner frame when the canvas is resized"""
+        # Recalculate grid positions for all thumbnails
+        if self.thumbnails:
+            canvas_width = event.width
+            num_columns = max(1, canvas_width // (self.thumbnail_size + 10))
+            
+            for index, (thumb_frame, _) in enumerate(self.thumbnails):
+                row = index // num_columns
+                col = index % num_columns
+                thumb_frame.grid(row=row, column=col, padx=2, pady=2)
+
         # Update the width of the inner frame
         bbox = self.thumbnails_frame.winfo_reqwidth()
         self.canvas.itemconfig(self.canvas_window, width=max(bbox, event.width))
@@ -533,7 +557,14 @@ class BidCarrousel(ttk.Frame):
         # Forcer le frame à prendre toute la largeur nécessaire
         bbox = self.thumbnails_frame.winfo_reqwidth()
         self.canvas.itemconfig(self.canvas_window, width=max(bbox, self.canvas.winfo_width()))
-        
+
+    def Bidtoggle_fullscreen(self, event=None):
+        """Toggle fullscreen mode"""
+        self.fullscreen = not self.fullscreen
+        self.parent.attributes('-fullscreen', self.fullscreen)
+        self.fullscreen_button.configure(text="⮌" if self.fullscreen else "⛶")
+        return "break" 
+
     def on_closing(self):
         """Handle window closing"""
         # Stop the loading thread
