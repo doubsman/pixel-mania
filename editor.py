@@ -964,14 +964,15 @@ class ImageEditorApp(BidFile, ActionState):
     
     def end_selection_rectangle(self, event):
         """End the selection rectangle and draw the rectangle."""
+        # Save state for undo
+        self.save_state()
+        # Get the grid coordinates for start and end points
         self.selection_end = (event.x, event.y)
         # Get the grid coordinates for start and end points
         start_x = min(self.selection_start[0], self.selection_end[0]) // self.image_scale
         start_y = min(self.selection_start[1], self.selection_end[1]) // self.image_scale
         end_x = max(self.selection_start[0], self.selection_end[0]) // self.image_scale
         end_y = max(self.selection_start[1], self.selection_end[1]) // self.image_scale
-        # Save state for undo
-        self.save_state()
         # Draw the rectangle
         for y in range(start_y, end_y + 1):
             for x in range(start_x, end_x + 1):
@@ -1024,8 +1025,8 @@ class ImageEditorApp(BidFile, ActionState):
 
     def end_circle(self, event):
         """Finish drawing the circle and apply it to the grid"""
-        self.selection_end = (event.x, event.y)
         self.save_state()
+        self.selection_end = (event.x, event.y)
         
         # Get center point and radius in grid coordinates
         center_x = int(self.selection_start[0] / self.image_scale)
@@ -1430,17 +1431,18 @@ class ImageEditorApp(BidFile, ActionState):
 
     def fill_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
+            self.save_state()
             for y in range(self.grid_height):
                 for x in range(self.grid_width):
                     if self.grid_sel_cells[y, x] == 1:
                         self.grid_colors[y, x] = self.current_select_color
                         self.grid_bid[y, x] = self.current_select_shape
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
-            self.save_state()
             self.refresh_image()
 
     def gradient_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
+            self.save_state()
             min_x, max_x, min_y, max_y = self._get_selection_bounds()
             width = (max_x - min_x + 1)
             for y in range(self.grid_height):
@@ -1450,7 +1452,6 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_bid[y, x] = 1
                         self.grid_colors[y, x] = color_value
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
-            self.save_state()
             self.refresh_image()
 
     def draw_grill(self, event=None, change=True):
