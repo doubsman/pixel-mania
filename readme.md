@@ -1,6 +1,6 @@
 # BID Editor
 
-![BID Editor Splashscreen](ico/splashscreen.png)
+![BID Editor Splashscreen](ico/splash.png)
 
 A pixel art editor specialized for BID (Binary Image Data) format files.
 
