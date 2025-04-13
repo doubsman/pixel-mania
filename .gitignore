@@ -1,7 +1,8 @@
+./tst/*
+./wrk/*
 *.png
+!splash.png
 *.jpeg
 *.jpg
 *.exe
 */*.pyc
-./tst/*
-./wrk/*
