@@ -1247,35 +1247,33 @@ class ImageEditorApp(BidFile, ActionState):
         if not self.bool_mode_add_selection:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.canvas.delete("cell_select")
+            
         grid_x = self.grid_x
         grid_y = self.grid_y
-        # Get the color of the clicked cell
-        cell_color = self.grid_colors[grid_y, grid_x]
-        self.select_adjacent_cells(grid_x, grid_y, cell_color)
-        self.update_magic_selection()
-
-    def select_adjacent_cells(self, x, y, color):
-        # Check if cell is within grid boundaries
-        if x < 0 or x >= self.grid_width or y < 0 or y >= self.grid_height:
-            return
-        # Check if cell is already selected
-        if self.grid_sel_cells[y, x] == 1:
-            return
-        # Check if cell has the same color
-        if self.grid_colors[y, x] != color:
-            return
-        # Select the cell
-        self.grid_sel_cells[y, x] = 1
+        target_color = self.grid_colors[grid_y, grid_x]
         
-        # Check adjacent cells (including diagonals)
-        self.select_adjacent_cells(x, y - 1, color)      # Up
-        self.select_adjacent_cells(x, y + 1, color)      # Down
-        self.select_adjacent_cells(x - 1, y, color)      # Left
-        self.select_adjacent_cells(x + 1, y, color)      # Right
-        #self.select_adjacent_cells(x - 1, y - 1, color)  # Up-Left
-        #self.select_adjacent_cells(x + 1, y - 1, color)  # Up-Right
-        #self.select_adjacent_cells(x - 1, y + 1, color)  # Down-Left
-        #self.select_adjacent_cells(x + 1, y + 1, color)  # Down-Right
+        # Using a queue for flood fill
+        queue = [(grid_x, grid_y)]
+        visited = set()
+        
+        while queue:
+            x, y = queue.pop(0)
+            if (x, y) in visited:
+                continue
+            visited.add((x, y))
+            
+            if (0 <= x < self.grid_width and 
+                0 <= y < self.grid_height and 
+                self.grid_colors[y, x] == target_color):
+                self.grid_sel_cells[y, x] = 1
+                
+                # Add adjacent cells
+                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                    new_x, new_y = x + dx, y + dy
+                    if (new_x, new_y) not in visited:
+                        queue.append((new_x, new_y))
+        
+        self.update_magic_selection()
 
     def update_magic_selection(self):
         for y in range(self.grid_height):
@@ -1387,8 +1385,8 @@ class ImageEditorApp(BidFile, ActionState):
 
     def flipv_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             if self.flipv_grid():
+                self.save_state()
                 self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.flipv_cells()
@@ -1396,8 +1394,8 @@ class ImageEditorApp(BidFile, ActionState):
 
     def fliph_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             if self.fliph_grid():
+                self.save_state()
                 self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.fliph_cells()
@@ -1405,8 +1403,8 @@ class ImageEditorApp(BidFile, ActionState):
 
     def rotate_l_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             if self.rotate_l_grid():
+                self.save_state()
                 self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.rotate_l_cells()
@@ -1414,8 +1412,8 @@ class ImageEditorApp(BidFile, ActionState):
     
     def rotate_r_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
-            self.save_state()
             if self.rotate_r_grid():
+                self.save_state()
                 self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.rotate_r_cells()
@@ -1424,8 +1422,8 @@ class ImageEditorApp(BidFile, ActionState):
     def inverse_colors(self):
         if len(self.canvas.gettags("cell_select")) > 0:
             if self.inverse_grid():
-                self.refresh_image()
                 self.save_state()
+                self.refresh_image()
         elif hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.grid_clipboard = self.clipboard.inverse_colors()
             self.refresh_thumbnail()
@@ -1438,8 +1436,8 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_colors[y, x] = self.current_select_color
                         self.grid_bid[y, x] = self.current_select_shape
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
-            self.refresh_image()
             self.save_state()
+            self.refresh_image()
 
     def gradient_cells(self):
         if len(self.canvas.gettags("cell_select")) > 0:
@@ -1452,8 +1450,8 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_bid[y, x] = 1
                         self.grid_colors[y, x] = color_value
                         self.draw_cell(x, y, self.grid_bid[y, x], self.grid_colors[y, x], False)
-            self.refresh_image()
             self.save_state()
+            self.refresh_image()
 
     def draw_grill(self, event=None, change=True):
         if change:
@@ -1510,6 +1508,9 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_bid = action.grid_bid
             self.grid_colors = action.grid_colors
             self.grid_clipboard = action.grid_clipboard
+            # Update clipboard object with the restored clipboard data
+            if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
+                self.clipboard.insert_symbol(self.grid_clipboard)
             self.grid_sel_cells = action.grid_sel_cells
             self.grid_width = action.grid_width
             self.grid_height = action.grid_height
