@@ -1,45 +1,95 @@
-## todo
-* redo recurse
+# BID Editor
 
+![BID Editor Splashscreen](ico/splashscreen.png)
 
-______________________________________________________________
-# Bid 2 Image
-```
-.\bid2img.py --path_bid bid/fence5.bid --no_display_image
-```
+A pixel art editor specialized for BID (Binary Image Data) format files.
 
-# Bid 2 Ascii
-```
-.\bid2ascii.py --path_bid bid/fence5.bid
-```
+## Features
 
-# Bid 2 Graph
-```
-.\bid2graph.py --path_bid bid/fence5.bid
-```
+### File Operations
+- Create new BID files
+- Open existing BID files
+- Save BID files
+- Export as PNG/ASCII
+- Auto-backup system
 
+### Grid Management
+- Adjustable grid size (5x5 to 96x96)
+- Toggle grid display (Ctrl+G)
+- Dynamic zoom (Ctrl+Mouse Wheel)
+- Grid coordinates display
 
-______________________________________________________________
-# Image 2 Bid
-```
-.\img2bid.py --path_image source/fence.jpeg --grid_width 40 --grid_height 40 --no_display_image
-.\img2bid.py --path_image E:\\Download\\test.png --grid_width 11 --grid_height 11 --no_save_bid --no_save_ascii --display_cells --display_cells_scale_reduce 10
-```
-# Image 2 Ascii
-```
-.\img2ascii.py --path_image png/chevalier.png --grid_width 4 --grid_height 4
-.\img2ascii.py --path_image export/fence.png --grid_width 40 --grid_height 40
-.\img2ascii.py --path_image png/carre.png --grid_width 4 --grid_height 4 --scale 0.5
-```
+### Drawing Tools
+- Freehand drawing mode
+- Line tool
+- Rectangle tool
+- Circle tool
+- Color palette
+- Shape selector
 
-______________________________________________________________
-# Ascii 2 Bid
-```
-.\ascii2bid.py --path_ascii export/fence.ascii --path_bid export/fence5.bid
-```
+### Selection Tools
+- Rectangle selection
+- Lasso selection
+- Add to selection (Shift)
+- Select all (Ctrl+A)
+- Delete selection (Delete)
 
-______________________________________________________________
-# create EXE Windows from editor
-```
+### Clipboard Operations
+- Copy selection (Ctrl+C)
+- Cut selection (Ctrl+X)
+- Paste with preview (Ctrl+V)
+- Multiple paste anchors
+
+### Edit Operations
+- Undo (Ctrl+Z)
+- Redo (Ctrl+Y)
+- Rotate selection (left/right)
+- Flip selection (horizontal/vertical)
+- Clear canvas
+
+### View Features
+- Thumbnail preview
+- Real-time coordinates
+- Selection size display
+- Zoom level control
+- Auto-scrolling
+
+### Symbol Library
+- Save custom symbols
+- Load saved symbols
+- Symbol preview
+
+### build from source:
+```bash
 pyinstaller --noconfirm --onefile --add-data "ico;." --windowed --name bideditor editor.py
 ```
+
+## Requirements
+- Windows 7/10/11
+- Screen resolution: 1024x768 minimum
+
+## Keyboard Shortcuts
+
+### File Operations
+- Ctrl+M : Open Carrouselle files
+- Ctrl+O : Open file
+- Ctrl+S : Save file
+
+### Edit Operations
+- Ctrl+Z : Undo
+- Ctrl+Y : Redo
+- Delete : Delete selection
+- Ctrl+A : Select all
+- Esc : Cancel current operation
+
+### Clipboard Operations
+- Ctrl+C : Copy selection
+- Ctrl+X : Cut selection
+- Ctrl+V : Paste
+
+### View Controls
+- Ctrl+G : Toggle grid
+- F11: Full-Screen
+- Shift+Mouse Wheel: Horizontal scroll
+- Mouse Wheel: Vertical scroll
+- Ctrl+Mouse Wheel: Zoom in/out
