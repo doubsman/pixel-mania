@@ -16,10 +16,10 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.02'
+VERSION='1.03'
 
 # Logging configuration
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def resource_path(relative_path):
@@ -69,7 +69,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.root.title(self.tittle)
         self.root.geometry("1820x1560")
         self.root.resizable(width=True, height=True)
-        self.root.minsize(1820, 1560)  # Taille minimale
+        self.root.minsize(1820, 1560)
         
         # Intercept window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -201,7 +201,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.rotate_r_button = self.create_button(left_frame2, 'ico/rotate-right.png', self.rotate_r_cells, "Rotate Right 90°")
         self.rotate_l_button = self.create_button(left_frame2, 'ico/rotate-left.png', self.rotate_l_cells, "Rotate Left 90°")
         
-        save_symbol = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
+        self.save_symbol_button = self.create_button(left_frame2, 'ico/save.png', self.save_grid_clipboard, "Save Symbol", 'bottom', 25)
         load_symbol = self.create_button(left_frame2, 'ico/open.png', self.open_grid_clipboard, "Load Symbol", 'bottom', 25)
 
         self.mode_copy = ttk.Label(left_frame2)
@@ -723,8 +723,10 @@ class ImageEditorApp(BidFile, ActionState):
 
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.paste_button.config(state=ttk.NORMAL)
+            self.save_symbol_button.config(state=ttk.NORMAL)
         else:
             self.paste_button.config(state=ttk.DISABLED)
+            self.save_symbol_button.config(state=ttk.DISABLED)
         
         if self.bool_backup:
             self.save_button.config(state=ttk.NORMAL)
@@ -1110,7 +1112,7 @@ class ImageEditorApp(BidFile, ActionState):
         height = end_y - start_y + 1
         
         # Update coordinates label with dimensions
-        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}] [{width:02d}x{height:02d}]")
+        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}] [{width:02d}, {height:02d}]")
 
     def end_selection(self, event):
         """End the selection rectangle."""
@@ -1355,7 +1357,7 @@ class ImageEditorApp(BidFile, ActionState):
             max_y = max(y for _, y, _, _ in self.grid_clipboard)
             width = max_x - min_x + 1
             height = max_y - min_y + 1
-            self.size_clipboard_label.config(text=f"{width:02d} x {height:02d}")
+            self.size_clipboard_label.config(text=f"[{width:02d}, {height:02d}]")
         else:
             self.size_clipboard_label.config(text="")
 
