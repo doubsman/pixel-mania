@@ -16,7 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.01'
+VERSION='1.02'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
@@ -304,7 +304,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.root.bind("<Configure>", self.on_window_resize)
 
         # Create coordinates label on outercanvas
-        self.coord_label = ttk.Label(self.outercanvas, text="(00, 00)", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
+        self.coord_label = ttk.Label(self.outercanvas, text="[00, 00]", background='#E0E0E0', font=('TkDefaultFont', 12, 'bold'))
         self.coord_label_id = self.outercanvas.create_window(10, 10, window=self.coord_label, anchor="nw")
 
         # Bind mouse wheel events for scrolling
@@ -842,7 +842,7 @@ class ImageEditorApp(BidFile, ActionState):
         if self.grid_x < 0:
             self.grid_x = 0
                 
-        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
+        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}]")
 
         # Update the position of the image overlay
         if self.bool_paste_mode and len(self.grid_clipboard) > 0:
@@ -979,7 +979,7 @@ class ImageEditorApp(BidFile, ActionState):
                     self.grid_colors[y, x] = self.current_select_color
                     self.draw_cell(x, y, self.current_select_shape, self.current_select_color)
         # Reset coordinates display
-        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
+        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}]")
         # Refresh the image
         self.refresh_image()
         # Remove the selection rectangle
@@ -1110,7 +1110,7 @@ class ImageEditorApp(BidFile, ActionState):
         height = end_y - start_y + 1
         
         # Update coordinates label with dimensions
-        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d}) ({width:02d}x{height:02d})")
+        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}] [{width:02d}x{height:02d}]")
 
     def end_selection(self, event):
         """End the selection rectangle."""
@@ -1118,7 +1118,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.update_selected_cells()
         self.canvas.delete("selection_rect")
          # Reset coordinates display
-        self.coord_label.config(text=f"({self.grid_x+1:02d}, {self.grid_y+1:02d})")
+        self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}]")
 
     def update_selected_cells(self):
         """Update the selected cells."""
@@ -1484,17 +1484,24 @@ class ImageEditorApp(BidFile, ActionState):
             self.canvas.delete('grid_line_w')
             self.canvas.delete('grid_line_h')
 
-
-
     def undo_action(self, event=None):
         action = self.undo_actionstate()
         if action is not None:
-            current_state = Action(self.grid_bid.copy(), self.grid_colors.copy(), self.grid_clipboard.copy(), self.grid_sel_cells.copy())
+            current_state = Action(
+                self.grid_bid.copy(), 
+                self.grid_colors.copy(), 
+                self.grid_clipboard.copy(), 
+                self.grid_sel_cells.copy(),
+                self.grid_width,
+                self.grid_height
+            )
             self.retreive_action(action)
             self.redo_stack.append(current_state)
 
     def redo_action(self, event=None):
         self.retreive_action(self.redo_actionstate())
+        self.update_buttons_state()
+        self.update_grid_size()
 
     def retreive_action(self, action=None):
         if action is not None:
@@ -1502,14 +1509,25 @@ class ImageEditorApp(BidFile, ActionState):
             self.grid_colors = action.grid_colors
             self.grid_clipboard = action.grid_clipboard
             self.grid_sel_cells = action.grid_sel_cells
+            self.grid_width = action.grid_width
+            self.grid_height = action.grid_height
             self.draw_bidfile()
             self.refresh_image()
             self.refresh_thumbnail()
+            self.update_buttons_state()
+            self.update_grid_size()
 
     def save_state(self):
-        """Save ACtion."""
+        """Save Action."""
         self.bool_backup = True
-        self.save_actionstate(self.grid_bid, self.grid_colors, self.grid_clipboard, self.grid_sel_cells)
+        self.save_actionstate(
+            self.grid_bid, 
+            self.grid_colors, 
+            self.grid_clipboard, 
+            self.grid_sel_cells,
+            self.grid_width,
+            self.grid_height
+        )
 
     def on_press(self, key):
         if key == Key.shift:
