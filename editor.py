@@ -16,10 +16,10 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.03'
+VERSION='1.04'
 
 # Logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def resource_path(relative_path):
@@ -1078,7 +1078,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<Button-1>")
         self.canvas.bind("<ButtonPress-1>", self.start_selection)
         self.canvas.bind("<B1-Motion>", self.update_selection)
-        self.canvas.bind("<ButtonRelease-1>", self.end_selection)
+        self.canvas.bind("<ButtonRelease-1>", self.end_selection_area)
 
     def start_selection(self, event):
         """Start the selection rectangle."""
@@ -1114,7 +1114,7 @@ class ImageEditorApp(BidFile, ActionState):
         # Update coordinates label with dimensions
         self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}] [{width:02d}, {height:02d}]")
 
-    def end_selection(self, event):
+    def end_selection_area(self, event):
         """End the selection rectangle."""
         self.selection_end = (event.x, event.y)
         self.update_selected_cells()
@@ -1170,6 +1170,8 @@ class ImageEditorApp(BidFile, ActionState):
         coords.append(event.x)
         coords.append(event.y)
         self.canvas.coords(self.selection_rect, *coords)
+        # Update coordinates without rebinding
+        self.update_coords_cells(event)
         self.canvas.bind("<Motion>", self.update_lasso)
         self.canvas.bind("<Leave>", self.end_lasso)
 
@@ -1224,6 +1226,9 @@ class ImageEditorApp(BidFile, ActionState):
         
         self.update_buttons_state()
         self.canvas.delete("selection_rect")
+        # Restore the coordinate update binding
+        self.canvas.unbind("<Motion>")
+        self.canvas.bind("<Motion>", self.update_coords_cells)
     
     def is_point_in_polygon(self, point, polygon):
         """Check if a point is inside a polygon using the ray-casting algorithm."""
@@ -1365,10 +1370,18 @@ class ImageEditorApp(BidFile, ActionState):
             self.save_state()
 
         selected_cells = []
+        min_x = float('inf')
+        min_y = float('inf')
+        max_x = float('-inf')
+        max_y = float('-inf')
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 if self.grid_sel_cells[y, x] == 1:
                     selected_cells.append((x, y, self.grid_bid[y][x], self.grid_colors[y][x]))
+                    min_x = min(min_x, x)
+                    max_x = max(max_x, x)
+                    min_y = min(min_y, y)
+                    max_y = max(max_y, y)
                     if cut:
                         self.draw_cell(x, y, 0, 0)
                         self.grid_bid[y, x] = 0
@@ -1377,7 +1390,13 @@ class ImageEditorApp(BidFile, ActionState):
             self.refresh_image()
 
         self.grid_clipboard = selected_cells
-        self.update_buttons_state()
+        # Set dimensions before inserting symbol
+        if len(selected_cells) > 0:
+            self.clipboard.min_x = min_x
+            self.clipboard.max_x = max_x
+            self.clipboard.min_y = min_y
+            self.clipboard.max_y = max_y
+
         self.clipboard.insert_symbol(self.grid_clipboard)
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
@@ -1385,10 +1404,6 @@ class ImageEditorApp(BidFile, ActionState):
 
         # Update size label
         if len(self.grid_clipboard) > 0:
-            min_x = min(x for x, _, _, _ in self.grid_clipboard)
-            max_x = max(x for x, _, _, _ in self.grid_clipboard)
-            min_y = min(y for _, y, _, _ in self.grid_clipboard)
-            max_y = max(y for _, y, _, _ in self.grid_clipboard)
             width = max_x - min_x + 1
             height = max_y - min_y + 1
             self.size_clipboard_label.config(text=f"[{width:02d}, {height:02d}]")
