@@ -774,6 +774,7 @@ class ImageEditorApp(BidFile, ActionState):
         canvas.image = photo
 
     def refresh_thumbnail(self, dimension=80):
+        self.thumbnail_canvas.configure(bg='#E0E0E0')
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             # Get image with transparency (handled by Cells)
             thumbnail = self.clipboard.symbol_image
@@ -789,7 +790,6 @@ class ImageEditorApp(BidFile, ActionState):
             thumbnail = thumbnail.resize((new_width, new_height), Image.LANCZOS)
             
             # Configure canvas to support transparency
-            self.thumbnail_canvas.configure(bg='#E0E0E0')
             self.center_image_on_canvas(self.thumbnail_canvas, thumbnail)
         else:
             image = Image.open(resource_path(os.path.join('ico', 'empty.png')))
@@ -1080,7 +1080,6 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.bind("<B1-Motion>", self.update_selection)
         self.canvas.bind("<ButtonRelease-1>", self.end_selection)
 
-
     def start_selection(self, event):
         """Start the selection rectangle."""
         if not self.bool_mode_add_selection:
@@ -1178,9 +1177,36 @@ class ImageEditorApp(BidFile, ActionState):
         """End the lasso selection."""
         self.selection_end = (event.x, event.y)
         coords = self.canvas.coords(self.selection_rect)
+
+        # Check if we have enough points to form a polygon
+        if len(coords) < 4:
+            self.canvas.delete("selection_rect")
+            return
+            
+        # Close the polygon by adding the first point at the end
+        coords.append(coords[0])
+        coords.append(coords[1])
+        
         # Get the polygon points
         polygon_points = [(coords[i], coords[i+1]) for i in range(0, len(coords), 2)]
-        # Check if each cell is inside the polygon
+        
+        # Calculate bounds for selection
+        min_x = float('inf')
+        min_y = float('inf')
+        max_x = float('-inf')
+        max_y = float('-inf')
+        
+        # First pass: find bounds
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                cell_center = ((x + 0.5) * self.image_scale, (y + 0.5) * self.image_scale)
+                if self.is_point_in_polygon(cell_center, polygon_points):
+                    min_x = min(min_x, x)
+                    max_x = max(max_x, x)
+                    min_y = min(min_y, y)
+                    max_y = max(max_y, y)
+        
+        # Second pass: create selection with correct coordinates
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 cell_center = ((x + 0.5) * self.image_scale, (y + 0.5) * self.image_scale)
@@ -1189,6 +1215,13 @@ class ImageEditorApp(BidFile, ActionState):
                     x1, y1 = (x * self.image_scale), (y * self.image_scale)
                     x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
+        
+        # Update dimensions display
+        if min_x != float('inf'):
+            width = max_x - min_x + 1
+            height = max_y - min_y + 1
+            self.coord_label.config(text=f"[{self.grid_x+1:02d}, {self.grid_y+1:02d}] [{width:02d}, {height:02d}]")
+        
         self.update_buttons_state()
         self.canvas.delete("selection_rect")
     
@@ -1328,6 +1361,9 @@ class ImageEditorApp(BidFile, ActionState):
         self.canvas.unbind("<ButtonRelease-1>")
         self.canvas.unbind("<Button-1>")
 
+        if cut:
+            self.save_state()
+
         selected_cells = []
         for y in range(self.grid_height):
             for x in range(self.grid_width):
@@ -1338,15 +1374,14 @@ class ImageEditorApp(BidFile, ActionState):
                         self.grid_bid[y, x] = 0
                         self.grid_colors[y, x] = 0
         if cut:
-            self.save_state()                      
             self.refresh_image()
 
         self.grid_clipboard = selected_cells
+        self.update_buttons_state()
         self.clipboard.insert_symbol(self.grid_clipboard)
-        self.refresh_thumbnail()
         self.canvas.delete(f"cell_select")
         self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
-        self.update_buttons_state()
+        self.refresh_thumbnail()
 
         # Update size label
         if len(self.grid_clipboard) > 0:
@@ -1518,7 +1553,6 @@ class ImageEditorApp(BidFile, ActionState):
             self.draw_bidfile()
             self.refresh_image()
             self.refresh_thumbnail()
-            self.update_buttons_state()
             self.update_grid_size()
 
     def save_state(self):
