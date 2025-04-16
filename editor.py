@@ -452,7 +452,13 @@ class ImageEditorApp(BidFile, ActionState):
             file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
         else:
             file_img = self.file_path.replace('.bid',f'_{self.grid_width}x{self.grid_height}.png')
-        self.save_imagefile(file_img, bool_outline=self.bool_grid)
+        if self.bool_grid:
+            find_shape = np.where(self.grid_bid > 1)
+            mode_grid = (find_shape[0].size == 0)
+            print(True, mode_grid)
+        else:
+            mode_grid = False
+        self.save_imagefile(file_img, bool_outline=mode_grid)
 
     def open_folder(self):
         if self.file_path != '':
