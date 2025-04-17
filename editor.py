@@ -455,7 +455,6 @@ class ImageEditorApp(BidFile, ActionState):
         if self.bool_grid:
             find_shape = np.where(self.grid_bid > 1)
             mode_grid = (find_shape[0].size == 0)
-            print(True, mode_grid)
         else:
             mode_grid = False
         self.save_imagefile(file_img, bool_outline=mode_grid)
@@ -478,7 +477,7 @@ class ImageEditorApp(BidFile, ActionState):
         dialog.transient(self.root)  # modal windows
         dialog.grab_set()  # force focus on this window
         
-        # Cacher la fenêtre initialement
+        # Hide window initially
         dialog.withdraw()
         
         # create carrousel

@@ -10,13 +10,8 @@ class SplashScreen(ttk.Toplevel):
         # Remove window decorations
         self.overrideredirect(True)
         
-        # Set splash dimensions
-        width = 422
-        height = 370
-        
-        # Load and display splash image
+         # Load and display splash image
         splash_image = Image.open(os.path.join('ico', 'splash.png'))
-        #splash_image = splash_image.resize((width, height-30), Image.Resampling.LANCZOS)
         self.splash_photo = ImageTk.PhotoImage(splash_image)
         
         # Create and pack image label
