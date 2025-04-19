@@ -16,7 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.04'
+VERSION='1.05'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -258,7 +258,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.zoom_scale = ttk.Scale(
             zoom_frame,
             from_=0,
-            to=100,
+            to=75,
             orient="horizontal",
             length=150,
             value=0,
@@ -594,26 +594,39 @@ class ImageEditorApp(BidFile, ActionState):
         self.mode_draw()
 
     def zoom(self, event):
+        """Zoom in/out using mouse wheel"""
         old_scale = self.image_scale
-        if event.num == 4 or event.delta > 0:
-            # Limit maximum zoom to 5x the default scale
-            if self.image_scale < self.image_scale_default * 5:
-                self.image_scale += 10
-        elif event.num == 5 or event.delta < 0:
-            self.image_scale -= 10
+        if event.num == 4 or event.delta > 0:  # zoom in
+            new_scale = min(self.image_scale + 10, self.image_scale_default * 4)
+        else:  # zoom out
+            new_scale = max(self.image_scale - 10, self.image_scale_default)
+            
+        self.apply_zoom(new_scale, old_scale, event)
 
-        # Limit minimum Zoom
-        if self.image_scale < self.image_scale_default:
-            self.image_scale = self.image_scale_default
-        # Limit maximum Zoom
-        elif self.image_scale > self.image_scale_default * 5:
-            self.image_scale = self.image_scale_default * 5
+    def on_zoom_scale(self, value):
+        try:
+            value = float(value)
+            old_scale = self.image_scale
+            new_scale = int(self.image_scale_default * (1 + (value/100) * 4))
+            # Create a dummy event with current mouse position
+            dummy_event = type('DummyEvent', (), {
+                'x': self.root.winfo_pointerx() - self.canvas.winfo_rootx(),
+                'y': self.root.winfo_pointery() - self.canvas.winfo_rooty()
+            })
+            self.apply_zoom(new_scale, old_scale, dummy_event)
+        except ValueError:
+            pass
 
+    def apply_zoom(self, new_scale, old_scale, event):
+        """Apply zoom level consistently"""
+        self.image_scale = max(self.image_scale_default, min(new_scale, self.image_scale_default * 4))
         zoom_factor = self.image_scale / old_scale
         
         # Update zoom scale to match current zoom level
-        scale_value = ((self.image_scale / self.image_scale_default) - 1) / 5 * 100
+        scale_value = ((self.image_scale / self.image_scale_default) - 1) / 4 * 100
+        self.zoom_scale.config(command='')
         self.zoom_scale.set(scale_value)
+        self.zoom_scale.config(command=lambda value: self.on_zoom_scale(value))
 
         # Save current cursor position
         canvas_x = self.canvas.canvasx(event.x)
@@ -640,28 +653,6 @@ class ImageEditorApp(BidFile, ActionState):
         if self.bool_grid:
             self.draw_grill(change=False)
 
-    def on_zoom_scale(self, value):
-        try:
-            value = float(value)
-            # Calculate new scale: 0=default scale, 100=5x default scale
-            new_scale = int(self.image_scale_default * (1 + (value/100) * 4))
-            old_scale = self.image_scale
-            self.image_scale = new_scale
-            
-            # Update image with new scale
-            self.draw_bidfile()
-            self.refresh_image()
-            
-            # Update scroll region
-            image_width = self.grid_width * self.image_scale
-            image_height = self.grid_height * self.image_scale
-            self.canvas.config(scrollregion=(0, 0, image_width, image_height))
-            
-            # Redraw grid if necessary
-            if self.bool_grid:
-                self.draw_grill(change=False)
-        except ValueError:
-            pass
 
     def on_mousewheel(self, event):
         """Handle vertical scrolling"""
