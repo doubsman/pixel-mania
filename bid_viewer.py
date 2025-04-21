@@ -15,7 +15,7 @@ class BidViewer:
         self.root.grid_columnconfigure(0, weight=1)
         
         # Create carrousel with no callback (standalone mode)
-        self.carrousel = BidCarrousel(self.root, callback=None)
+        self.carrousel = BidCarrousel(self.root, callback=None, thumbnail_size=480)
         self.carrousel.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         
         # Define a minimum size for the window

@@ -16,7 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.05'
+VERSION='1.06'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')

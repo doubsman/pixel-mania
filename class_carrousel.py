@@ -264,14 +264,15 @@ class SymbolCarrousel:
             print(f"Error deleting file {sym_file}: {e}")
 
 class BidCarrousel(ttk.Frame):
-    def __init__(self, parent, bid_dir="bid", callback=None):
+    def __init__(self, parent, bid_dir="bid", thumbnail_size = 200, callback=None, on_thumbnail_created=None):
         super().__init__(parent)
         
         self.parent = parent
         self.bid_dir = bid_dir
         self.thumbnails = []
         self.callback = callback
-        self.thumbnail_size = 200
+        self.on_thumbnail_created = on_thumbnail_created  # Callback for thumbnail creation
+        self.thumbnail_size = thumbnail_size
         self.loading_queue = queue.Queue()
         self.is_loading = False
         self.all_bid_files = []  # Store all bid files
@@ -508,7 +509,11 @@ class BidCarrousel(ttk.Frame):
         label.bind('<Button-1>', lambda e, f=os.path.join(self.bid_dir, bid_file): self.on_click(f))
         name_label.bind('<Button-1>', lambda e, f=os.path.join(self.bid_dir, bid_file): self.on_click(f))
         
-        # Stocker la vignette
+        # Add the binding for the right-click
+        if self.on_thumbnail_created:
+            self.on_thumbnail_created(label, name_label)
+        
+        # Store thumbnail
         self.thumbnails.append((thumb_frame, photo))
         
         # Update the scroll region
