@@ -43,3 +43,10 @@ ______________________________________________________________
 ```
 pyinstaller --noconfirm --onefile --add-data "ico;." --windowed --name bideditor editor.py
 ```
+
+
+______________________________________________________________
+# create EXE biud viewer Windows from editor
+```
+pyinstaller --noconfirm --onefile --add-data "ico/carre.png;." --windowed --name bid_viewer bid_viewer.py
+```

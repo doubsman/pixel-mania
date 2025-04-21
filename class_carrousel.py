@@ -279,6 +279,7 @@ class BidCarrousel(ttk.Frame):
         self.loader_thread = None  # Store the loader thread reference
         self.no_files_label = None  # Store reference to the no files label
         self.fullscreen = False  # Initialize fullscreen state
+        self.original_title = self.parent.title()
 
         self.parent.bind('<F11>', self.Bidtoggle_fullscreen)
         self.parent.attributes('-fullscreen', False)
@@ -381,7 +382,7 @@ class BidCarrousel(ttk.Frame):
         self.filtered_bid_files = [f for f in self.all_bid_files if search_text in f.lower()]
         
         # Update the window title with the number of filtered elements
-        self.parent.title(f"Open Bid File [{len(self.filtered_bid_files)}]")
+        self.parent.title(f"{self.original_title} [{len(self.filtered_bid_files)}]")
         
         if not self.filtered_bid_files:
             # Display a message if no files match the search
@@ -423,7 +424,7 @@ class BidCarrousel(ttk.Frame):
         self.filtered_bid_files = self.all_bid_files.copy()
         
         # Update the window title with the number of elements
-        self.parent.title(f"Open Bid File [{len(self.all_bid_files)}]")
+        self.parent.title(f"{self.original_title} [{len(self.all_bid_files)}]")
         
         # Remove existing no_files_label if it exists
         if self.no_files_label:
