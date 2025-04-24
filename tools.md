@@ -39,14 +39,20 @@ ______________________________________________________________
 ```
 
 ______________________________________________________________
-# create EXE Windows from editor
+# create EXE Windows from bid editor
 ```
-pyinstaller --noconfirm --onefile --add-data "ico;." --windowed --name bideditor editor.py
+pyinstaller --noconfirm --onefile --add-data "ico;." --windowed --name bid_editor bid_editor.py
 ```
 
 
 ______________________________________________________________
-# create EXE biud viewer Windows from editor
+# create EXE bid viewer Windows from editor
 ```
 pyinstaller --noconfirm --onefile --add-data "ico/carre.png;." --windowed --name bid_viewer bid_viewer.py
+```
+
+______________________________________________________________
+# create EXE bid Import Windows from editor
+```
+pyinstaller --noconfirm --onefile --windowed --name bid_import bid_import.py
 ```
