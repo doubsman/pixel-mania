@@ -412,7 +412,7 @@ class BidCarrousel(ttk.Frame):
         # Get all .bid files with their modification date
         self.all_bid_files = []
         for f in os.listdir(self.bid_dir):
-            if f.endswith('.bid'):
+            if f.endswith('.bid') or f.endswith('.bidz'):
                 path = os.path.join(self.bid_dir, f)
                 mtime = os.path.getmtime(path)
                 self.all_bid_files.append((f, mtime))

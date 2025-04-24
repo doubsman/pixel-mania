@@ -5,4 +5,8 @@
 *.jpeg
 *.jpg
 *.exe
+*.rar
+*.zip
+*.tar
+*.gz
 */*.pyc

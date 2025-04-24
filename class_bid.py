@@ -2,7 +2,8 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw
 from class_cells import Cells
-
+import zipfile
+import io
 
 class BidFile(Cells):
     def __init__(self):
@@ -18,7 +19,8 @@ class BidFile(Cells):
         self.draw = None
         self.grid_sel_cells = None
 
-    def load_bidfile(self, path_bid, image_with=None, image_height=None):
+    def load_bidfile_old(self, path_bid, image_with=None, image_height=None):
+        # bid
         self.path_bid = path_bid
         self.grid_bid = np.genfromtxt(self.path_bid, delimiter=1, dtype=int, ndmin=2)
         self.grid_width = len(self.grid_bid[0])
@@ -37,8 +39,49 @@ class BidFile(Cells):
                 for column in range(self.grid_width):
                     if self.grid_bid[row][column] > 0:
                         self.grid_colors[row][column] = 5
-            
-    
+        self.draw_bidfile()
+        return self.image
+
+    def load_bidfile(self, path_bid, image_with=None, image_height=None):
+        self.path_bid = path_bid
+        if path_bid.endswith(".bidz"):
+            # Format Zip
+            name_bid = os.path.basename(path_bid)
+            name_bid = name_bid.replace('.bidz','')
+            with zipfile.ZipFile(self.path_bid, 'r') as zipf:
+                # Charger grid_bid
+                with zipf.open(f'{name_bid}.bid') as f:
+                    content = io.TextIOWrapper(f).read()
+                    self.grid_bid = np.genfromtxt(io.StringIO(content), delimiter=1, dtype=int, ndmin=2)
+                
+                # Charger grid_colors
+                with zipf.open(f'{name_bid}.color') as f:
+                    content = io.TextIOWrapper(f).read()
+                    self.grid_colors = np.genfromtxt(io.StringIO(content), delimiter=1, dtype=int, ndmin=2)
+                    
+                self.bool_color = True
+        elif path_bid.endswith(".bid"):
+            # Charger depuis les fichiers séparés (compatibilité)
+            self.grid_bid = np.genfromtxt(self.path_bid, delimiter=1, dtype=int, ndmin=2)
+            self.path_color = self.path_bid.replace('.bid','.color')
+            self.bool_color = os.path.isfile(self.path_color)
+            if self.bool_color:
+                self.grid_colors = np.genfromtxt(self.path_color, delimiter=1, dtype=int, ndmin=2)
+            else:
+                self.grid_width = len(self.grid_bid[0])
+                self.grid_height = int(self.grid_bid.size / self.grid_width)
+                self.grid_colors = np.zeros_like(self.grid_bid)
+                for row in range(self.grid_height):
+                    for column in range(self.grid_width):
+                        if self.grid_bid[row][column] > 0:
+                            self.grid_colors[row][column] = 5
+                path_color = self.path_bid.replace('.bid','.color')
+                np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
+        
+        self.grid_width = len(self.grid_bid[0])
+        self.grid_height = int(self.grid_bid.size / self.grid_width)
+        if image_with is not None and image_height is not None:
+            self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
         self.draw_bidfile()
         return self.image
 
@@ -174,13 +217,34 @@ class BidFile(Cells):
                         self.draw.polygon(points, outline='gray')
 
     def save_bidfile(self, path_bid):
-        if not path_bid.endswith(".bid"):
-            self.path_bid = path_bid + '.bid'
+        if not path_bid.endswith(".bidz"):
+            if path_bid.endswith(".bid"):   
+                self.path_bid = path_bid + 'z'
+            else:
+                self.path_bid = path_bid + '.bid'
         else:
             self.path_bid = path_bid
-        np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
-        path_color = self.path_bid.replace('.bid','.color')
-        np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
+           
+        zip_path = self.path_bid
+        name_bid = os.path.basename(self.path_bid)
+        name_bid = name_bid.replace('.bidz','')
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Save grid_bid in a memory buffer
+            bid_buffer = io.StringIO()
+            np.savetxt(bid_buffer, self.grid_bid, fmt='%i', delimiter="")
+            zipf.writestr(f'{name_bid}.bid', bid_buffer.getvalue())
+            
+            # Save grid_colors in a memory buffer
+            color_buffer = io.StringIO()
+            np.savetxt(color_buffer, self.grid_colors, fmt='%i', delimiter="")
+            zipf.writestr(f'{name_bid}.color', color_buffer.getvalue())
+            
+        # Save separate files for compatibility
+        #np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
+        #path_color = self.path_bid.replace('.bid','.color')
+        #np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
+
+
 
     def save_imagefile(self, path_image, image_scale=50, bool_outline=True):
         if not path_image.endswith(".png"):
@@ -191,18 +255,6 @@ class BidFile(Cells):
         self.image.save(path_image)
         self.image_scale = backup_scale
         self.draw_bidfile()
-
-    def load_combined_file(self, path_combined):
-        data = np.load(path_combined)
-        self.grid_bid = data['grid_bid']
-        self.grid_colors = data['grid_colors']
-        image_array = data['image']
-        self.image = Image.fromarray(image_array)
-        self.draw = ImageDraw.Draw(self.image)
-
-    def save_combined_file(self, path_combined):
-        image_array = np.array(self.image)
-        np.savez(path_combined, grid_bid=self.grid_bid, grid_colors=self.grid_colors, image=image_array)
 
     def rotate_l_grid(self):
         """Rotate selected cells 90° counterclockwise"""

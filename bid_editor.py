@@ -16,7 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.06'
+VERSION='1.07'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -326,7 +326,7 @@ class ImageEditorApp(BidFile, ActionState):
         return button
 
     def open_bid(self, event=None):
-        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid")], initialdir="wrk")
+        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid"),("Bid Files Zip", "*.bidz")], initialdir="wrk")
         if bid_path != '':
             self.save_bid()
             self.file_path = bid_path
@@ -427,10 +427,10 @@ class ImageEditorApp(BidFile, ActionState):
 
     def saveas_bid(self):
         if self.bool_backup or self.file_path != '':
-            self.file_path = filedialog.asksaveasfilename(title="Save Bid File", filetypes=[("Bid Files", "*.bid")])
+            self.file_path = filedialog.asksaveasfilename(title="Save Bid File", filetypes=[("Bid Files", "*.bidz")])
             if self.file_path != '':
-                if not self.file_path.endswith('.bid'):
-                    self.file_path += '.bid'
+                if not self.file_path.endswith('.bidz'):
+                    self.file_path += '.bidz'
                 # Check if file already exists
                 if os.path.isfile(self.file_path):
                     # Ask for confirmation to overwrite
@@ -451,7 +451,7 @@ class ImageEditorApp(BidFile, ActionState):
         if self.file_path == '':
             file_img = filedialog.asksaveasfilename(title="Save PNG File", filetypes=[("PNG Image Files", "*.png")])
         else:
-            file_img = self.file_path.replace('.bid',f'_{self.grid_width}x{self.grid_height}.png')
+            file_img = self.file_path.replace('.bidz',f'_{self.grid_width}x{self.grid_height}.png')
         if self.bool_grid:
             find_shape = np.where(self.grid_bid > 1)
             mode_grid = (find_shape[0].size == 0)
@@ -533,7 +533,7 @@ class ImageEditorApp(BidFile, ActionState):
             np.savetxt(path_symbol, self.grid_clipboard, fmt='%i', delimiter=";")
 
     def display_console_bid(self):
-        file_ascii = self.file_path.replace('.bid','.ascii')
+        file_ascii = self.file_path.replace('.bidz','.ascii')
         bid_ascii = BidASCII(self.grid_bid, self.grid_colors, 1, file_ascii)
         
         # Calculate width in characters
