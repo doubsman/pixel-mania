@@ -19,7 +19,7 @@ from class_splashscreen import SplashScreen
 VERSION='1.08'
 
 # Logging configuration
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def resource_path(relative_path):
@@ -326,7 +326,7 @@ class ImageEditorApp(BidFile, ActionState):
         return button
 
     def open_bid(self, event=None):
-        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files", "*.bid"),("Bid Files Zip", "*.bidz")], initialdir="wrk")
+        bid_path = filedialog.askopenfilename(title="Open Bid File", filetypes=[("Bid Files Zip", "*.bidz"),("Bid Files", "*.bid")], initialdir="wrk")
         if bid_path != '':
             self.save_bid()
             self.file_path = bid_path
