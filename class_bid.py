@@ -19,29 +19,6 @@ class BidFile(Cells):
         self.draw = None
         self.grid_sel_cells = None
 
-    def load_bidfile_old(self, path_bid, image_with=None, image_height=None):
-        # bid
-        self.path_bid = path_bid
-        self.grid_bid = np.genfromtxt(self.path_bid, delimiter=1, dtype=int, ndmin=2)
-        self.grid_width = len(self.grid_bid[0])
-        self.grid_height = int(self.grid_bid.size / self.grid_width)
-        if image_with is not None and image_height is not None:
-            self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
-        # colors
-        self.path_color = self.path_bid.replace('.bid','.color')
-        self.bool_color = os.path.isfile(self.path_color)
-        if self.bool_color:
-            self.grid_colors = np.genfromtxt(self.path_color, delimiter=1, dtype=int, ndmin=2)
-        else:
-            self.grid_colors = np.zeros((self.grid_height, self.grid_width), dtype=int)
-            #browse self.grid_bid and define colors, set value=5 (black) if shape <>0
-            for row in range(self.grid_height):
-                for column in range(self.grid_width):
-                    if self.grid_bid[row][column] > 0:
-                        self.grid_colors[row][column] = 5
-        self.draw_bidfile()
-        return self.image
-
     def load_bidfile(self, path_bid, image_with=None, image_height=None):
         self.path_bid = path_bid
         if path_bid.endswith(".bidz"):
@@ -49,19 +26,17 @@ class BidFile(Cells):
             name_bid = os.path.basename(path_bid)
             name_bid = name_bid.replace('.bidz','')
             with zipfile.ZipFile(self.path_bid, 'r') as zipf:
-                # Charger grid_bid
+                # grid_bid
                 with zipf.open(f'{name_bid}.bid') as f:
                     content = io.TextIOWrapper(f).read()
                     self.grid_bid = np.genfromtxt(io.StringIO(content), delimiter=1, dtype=int, ndmin=2)
-                
-                # Charger grid_colors
+                # grid_colors
                 with zipf.open(f'{name_bid}.color') as f:
                     content = io.TextIOWrapper(f).read()
                     self.grid_colors = np.genfromtxt(io.StringIO(content), delimiter=1, dtype=int, ndmin=2)
                     
                 self.bool_color = True
         elif path_bid.endswith(".bid"):
-            # Charger depuis les fichiers séparés (compatibilité)
             self.grid_bid = np.genfromtxt(self.path_bid, delimiter=1, dtype=int, ndmin=2)
             self.path_color = self.path_bid.replace('.bid','.color')
             self.bool_color = os.path.isfile(self.path_color)
@@ -84,6 +59,44 @@ class BidFile(Cells):
             self.define_scale(image_with, image_height, self.grid_width, self.grid_height)
         self.draw_bidfile()
         return self.image
+
+    def save_bidfile(self, path_bid):
+        if not path_bid.endswith(".bidz"):
+            if path_bid.endswith(".bid"):   
+                self.path_bid = path_bid + 'z'
+            else:
+                self.path_bid = path_bid + '.bid'
+        else:
+            self.path_bid = path_bid
+           
+        zip_path = self.path_bid
+        name_bid = os.path.basename(self.path_bid)
+        name_bid = name_bid.replace('.bidz','')
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Save grid_bid in a memory buffer
+            bid_buffer = io.StringIO()
+            np.savetxt(bid_buffer, self.grid_bid, fmt='%i', delimiter="")
+            zipf.writestr(f'{name_bid}.bid', bid_buffer.getvalue())
+            
+            # Save grid_colors in a memory buffer
+            color_buffer = io.StringIO()
+            np.savetxt(color_buffer, self.grid_colors, fmt='%i', delimiter="")
+            zipf.writestr(f'{name_bid}.color', color_buffer.getvalue())
+            
+        # Save separate files for compatibility
+        #np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
+        #path_color = self.path_bid.replace('.bid','.color')
+        #np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
+
+    def save_imagefile(self, path_image, image_scale=50, bool_outline=True):
+        if not path_image.endswith(".png"):
+            path_image = path_image + '.png'
+        backup_scale = self.image_scale
+        self.image_scale = image_scale
+        self.draw_bidfile(bool_outline=bool_outline)
+        self.image.save(path_image)
+        self.image_scale = backup_scale
+        self.draw_bidfile()
 
     def new_bid(self, image_with=None, image_height=None, grid_width=48, grid_height=48):
         self.bool_color = True
@@ -216,46 +229,6 @@ class BidFile(Cells):
                     if bool_outline:
                         self.draw.polygon(points, outline='gray')
 
-    def save_bidfile(self, path_bid):
-        if not path_bid.endswith(".bidz"):
-            if path_bid.endswith(".bid"):   
-                self.path_bid = path_bid + 'z'
-            else:
-                self.path_bid = path_bid + '.bid'
-        else:
-            self.path_bid = path_bid
-           
-        zip_path = self.path_bid
-        name_bid = os.path.basename(self.path_bid)
-        name_bid = name_bid.replace('.bidz','')
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Save grid_bid in a memory buffer
-            bid_buffer = io.StringIO()
-            np.savetxt(bid_buffer, self.grid_bid, fmt='%i', delimiter="")
-            zipf.writestr(f'{name_bid}.bid', bid_buffer.getvalue())
-            
-            # Save grid_colors in a memory buffer
-            color_buffer = io.StringIO()
-            np.savetxt(color_buffer, self.grid_colors, fmt='%i', delimiter="")
-            zipf.writestr(f'{name_bid}.color', color_buffer.getvalue())
-            
-        # Save separate files for compatibility
-        #np.savetxt(self.path_bid, self.grid_bid, fmt='%i', delimiter="")
-        #path_color = self.path_bid.replace('.bid','.color')
-        #np.savetxt(path_color, self.grid_colors, fmt='%i', delimiter="")
-
-
-
-    def save_imagefile(self, path_image, image_scale=50, bool_outline=True):
-        if not path_image.endswith(".png"):
-            path_image = path_image + '.png'
-        backup_scale = self.image_scale
-        self.image_scale = image_scale
-        self.draw_bidfile(bool_outline=bool_outline)
-        self.image.save(path_image)
-        self.image_scale = backup_scale
-        self.draw_bidfile()
-
     def rotate_l_grid(self):
         """Rotate selected cells 90° counterclockwise"""
         if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
@@ -379,7 +352,7 @@ class BidFile(Cells):
     def flipv_grid(self):
         """Flip selected cells vertically"""
         if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
-            # Trouver les limites de la sélection
+            # Finding the limits of selection
             selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
             selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
             min_x = min(selected_x)
@@ -387,29 +360,29 @@ class BidFile(Cells):
             min_y = min(selected_y)
             max_y = max(selected_y)
             
-            # Créer une liste temporaire des cellules sélectionnées
+            # Create a temporary list of selected cells
             temp_cells = []
             for y in range(min_y, max_y + 1):
                 for x in range(min_x, max_x + 1):
                     if self.grid_sel_cells[y, x] == 1:
                         temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
-                        # Effacer la cellule d'origine
+                        # Delete original cell
                         self.grid_bid[y, x] = 0
                         self.grid_colors[y, x] = 0
             
-            # Calculer les nouvelles positions après retournement vertical
+            # Calculate new positions after vertical turning
             flipped_cells = []
             for cell in temp_cells:
                 x, y, shape, color = cell
-                # Calculer les coordonnées relatives au centre de la sélection
+                # Calculate the coordinates of the selection center
                 rel_x = x - min_x
                 rel_y = y - min_y
                 
-                # Retournement vertical
+                # Vertical turning
                 new_x = min_x + rel_x
                 new_y = max_y - rel_y
                 
-                # Retournement des formes de triangle
+                # Flipping triangle shapes
                 if shape == 3:
                     new_shape = 4
                 elif shape == 4:
@@ -423,13 +396,13 @@ class BidFile(Cells):
                 
                 flipped_cells.append((new_x, new_y, new_shape, color))
             
-            # Mettre à jour la grille avec les cellules retournées
+            # Update grid with returned cells
             for x, y, shape, color in flipped_cells:
                 if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
                     self.grid_bid[y, x] = shape
                     self.grid_colors[y, x] = color
             
-            # Redessiner
+            # Redraw
             self.draw_bidfile()
             return True
         return False
@@ -437,7 +410,7 @@ class BidFile(Cells):
     def fliph_grid(self):
         """Flip selected cells horizontally"""
         if self.grid_sel_cells is not None and np.any(self.grid_sel_cells):
-            # Trouver les limites de la sélection
+            # Finding the limits of selection
             selected_x = [x for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
             selected_y = [y for x in range(self.grid_width) for y in range(self.grid_height) if self.grid_sel_cells[y, x] == 1]
             min_x = min(selected_x)
@@ -445,29 +418,29 @@ class BidFile(Cells):
             min_y = min(selected_y)
             max_y = max(selected_y)
             
-            # Créer une liste temporaire des cellules sélectionnées
+            # Create a temporary list of selected cells
             temp_cells = []
             for y in range(min_y, max_y + 1):
                 for x in range(min_x, max_x + 1):
                     if self.grid_sel_cells[y, x] == 1:
                         temp_cells.append((x, y, self.grid_bid[y, x], self.grid_colors[y, x]))
-                        # Effacer la cellule d'origine
+                        # Delete original cell
                         self.grid_bid[y, x] = 0
                         self.grid_colors[y, x] = 0
             
-            # Calculer les nouvelles positions après retournement horizontal
+            # Calculate new positions after horizontal turning
             flipped_cells = []
             for cell in temp_cells:
                 x, y, shape, color = cell
-                # Calculer les coordonnées relatives au centre de la sélection
+                # Calculate the coordinates of the selection center
                 rel_x = x - min_x
                 rel_y = y - min_y
                 
-                # Retournement horizontal
+                # Horizontal turning
                 new_x = max_x - rel_x
                 new_y = min_y + rel_y
                 
-                # Retournement des formes de triangle
+                # Flipping triangle shapes
                 if shape == 3:
                     new_shape = 6
                 elif shape == 4:
@@ -481,13 +454,13 @@ class BidFile(Cells):
                 
                 flipped_cells.append((new_x, new_y, new_shape, color))
             
-            # Mettre à jour la grille avec les cellules retournées
+            # Update grid with returned cells
             for x, y, shape, color in flipped_cells:
                 if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
                     self.grid_bid[y, x] = shape
                     self.grid_colors[y, x] = color
             
-            # Redessiner
+            # Redraw
             self.draw_bidfile()
             return True
         return False

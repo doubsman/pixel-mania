@@ -16,7 +16,7 @@ from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 
-VERSION='1.07'
+VERSION='1.08'
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -63,7 +63,7 @@ class ImageEditorApp(BidFile, ActionState):
         BidFile.__init__(self)
         ActionState.__init__(self)
         self.root = root
-        self.tittle = f"Pixel Mania : Bid Editor v{VERSION}"
+        self.tittle = f"Pixel Mania <Bid Editor> v{VERSION}"
         
         # Configure main window first
         self.root.title(self.tittle)
@@ -1279,45 +1279,43 @@ class ImageEditorApp(BidFile, ActionState):
             self.image_over_id = 0
 
     def magic_select_cellules(self, event):
+        """Sélection magique des cellules de même type avec dessin direct"""
         if not self.bool_mode_add_selection:
             self.grid_sel_cells = np.zeros((self.grid_height, self.grid_width), dtype=int)
             self.canvas.delete("cell_select")
+        
+        x = self.grid_x
+        y = self.grid_y
+        ref_color = self.grid_colors[y, x]
             
-        grid_x = self.grid_x
-        grid_y = self.grid_y
-        target_color = self.grid_colors[grid_y, grid_x]
-        
-        # Using a queue for flood fill
-        queue = [(grid_x, grid_y)]
-        visited = set()
-        
-        while queue:
-            x, y = queue.pop(0)
-            if (x, y) in visited:
+        # Utiliser une pile pour le flood fill
+        stack = [(x, y)]
+        visited = np.zeros_like(self.grid_bid, dtype=bool)
+            
+        while stack:
+            cx, cy = stack.pop()
+            if visited[cy, cx]:
                 continue
-            visited.add((x, y))
-            
-            if (0 <= x < self.grid_width and 
-                0 <= y < self.grid_height and 
-                self.grid_colors[y, x] == target_color):
-                self.grid_sel_cells[y, x] = 1
+            visited[cy, cx] = True
+            if self.grid_colors[cy, cx] == ref_color:  # Ne vérifie que la couleur
+                # Marquer la cellule comme sélectionnée
+                self.grid_sel_cells[cy, cx] = 1
                 
-                # Add adjacent cells
-                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-                    new_x, new_y = x + dx, y + dy
-                    if (new_x, new_y) not in visited:
-                        queue.append((new_x, new_y))
-        
-        self.update_magic_selection()
-
-    def update_magic_selection(self):
-        for y in range(self.grid_height):
-            for x in range(self.grid_width):
-                if self.grid_sel_cells[y, x] == 1:
-                    x1, y1 = (x * self.image_scale), (y * self.image_scale)
-                    x2, y2 = ((x+1) * self.image_scale), ((y+1) * self.image_scale)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{x}_{y}"])
-        self.update_buttons_state()
+                # Dessiner le rectangle de sélection directement
+                x1 = cx * self.image_scale
+                y1 = cy * self.image_scale
+                x2 = (cx + 1) * self.image_scale
+                y2 = (cy + 1) * self.image_scale
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill="", outline="red", width=2, dash=(4,4), tags=['cell_select', f"cell_select{cx}_{cy}"])
+                
+                # Ajouter les cellules adjacentes
+                for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+                    nx, ny = cx + dx, cy + dy
+                    if (0 <= nx < self.grid_width and 
+                        0 <= ny < self.grid_height and 
+                        not visited[ny, nx]):
+                        stack.append((nx, ny))
+            self.update_buttons_state()
 
     def delete_cells(self, event=None):
         """Delete selected cells."""
