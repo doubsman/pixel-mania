@@ -3,10 +3,12 @@ import tkinter as tk
 from PIL import ImageTk
 from class_carrousel import BidCarrousel
 
+VERSION='0.9'
+
 class BidViewer:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Bid File Viewer")
+        self.root.title(f"Pixel Mania <Bid Viewer> v{VERSION}")
         self.root.geometry("1290x1290")
         icon = ImageTk.PhotoImage(file=os.path.join('ico', 'carre.png'))
         self.root.iconphoto(False, icon)

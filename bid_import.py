@@ -1,9 +1,11 @@
 import ttkbootstrap as ttk
-from tkinter import filedialog, messagebox, Entry
+from tkinter import filedialog, messagebox
 from PIL import ImageTk, Image
 from class_bid_imp import ImageProcessor
 from class_bid import BidFile
 import numpy as np
+
+VERSION='0.5'
 
 class ImageProcessorApp:
     def __init__(self, root):
@@ -11,7 +13,7 @@ class ImageProcessorApp:
         self.class_BidFile = BidFile()
         self.root = root
         self.path_image = None
-        self.title = "Image to BID Converter"
+        self.title = f"Pixel Mania <Bid Import> v{VERSION}"
         self.grid_width = ttk.IntVar(value=48)
         self.grid_height = ttk.IntVar(value=48)
         self.triangle_ratio = ttk.DoubleVar(value=0.30)

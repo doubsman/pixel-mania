@@ -553,7 +553,11 @@ class BidCarrousel(ttk.Frame):
             
     def _on_mousewheel(self, event):
         """Handle the vertical scrolling"""
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        try:
+            if self.canvas.winfo_exists():
+                self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        except:
+            pass
         
     def update_scroll_region(self):
         """Force the update of the scroll region"""
