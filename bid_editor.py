@@ -225,7 +225,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.palet.create_rectangle(0, 250, 50, 300, fill="", outline="red", width=2, tags="cell_color")
         
         self.thumbnail_canvas = ttk.Canvas(left_frame3, width=80, height=80, border=2, relief="sunken", bg='#E0E0E0')
-        self.thumbnail_canvas.pack(side="bottom", fill="y", padx=0)
+        self.thumbnail_canvas.pack(side="bottom", fill="y", padx=0, pady=5)
         self.thumbnail_canvas.pack_propagate(False)
 
         self.size_clipboard_label = ttk.Label(left_frame3, text="", font=('TkDefaultFont', 12, 'bold'))
@@ -720,9 +720,11 @@ class ImageEditorApp(BidFile, ActionState):
         if hasattr(self, 'grid_clipboard') and len(self.grid_clipboard) > 0:
             self.paste_button.config(state=ttk.NORMAL)
             self.save_symbol_button.config(state=ttk.NORMAL)
+            self.thumbnail_canvas.bind("<Button-1>", lambda e: self.paste_cells(e))
         else:
             self.paste_button.config(state=ttk.DISABLED)
             self.save_symbol_button.config(state=ttk.DISABLED)
+            self.thumbnail_canvas.unbind("<Button-1>")
         
         if self.bool_backup:
             self.save_button.config(state=ttk.NORMAL)
