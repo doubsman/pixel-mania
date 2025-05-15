@@ -15,8 +15,9 @@ from class_ascii import ImageASCII, BidASCII
 from class_consol import CmdTerminal
 from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
+from class_bid_3d import Bid3D
 
-VERSION='1.08'
+VERSION='1.09'
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -177,6 +178,7 @@ class ImageEditorApp(BidFile, ActionState):
         self.saveas_button = self.create_button(left_frame, 'ico/saveas.png', self.saveas_bid, "Save bid")
         self.save_image_button = self.create_button(left_frame, 'ico/photo.png', self.save_image, "Save Image")
         ascii_button = self.create_button(left_frame, 'ico/ascii.png', self.display_console_bid, "Save ASCII")
+        threed_button = self.create_button(left_frame, 'ico/3d.png', self.save_stl, "3D View")
         grid_button = self.create_button(left_frame, 'ico/grid.png', self.draw_grill, "Grid", "bottom")
         folder_button = self.create_button(left_frame, 'ico/openfolder.png', self.open_folder, "Open Folder", "bottom")
         imageascii_button = self.create_button(left_frame, 'ico/terminalimg.png', self.display_console_image, "Image ASCII", "bottom")
@@ -458,6 +460,19 @@ class ImageEditorApp(BidFile, ActionState):
         else:
             mode_grid = False
         self.save_imagefile(file_img, bool_outline=mode_grid)
+
+    def save_stl(self):
+        if self.file_path == '':
+            file_stl = filedialog.asksaveasfilename(title="Save STL File", filetypes=[("STL Files", "*.stl")])
+        else:
+            file_stl = self.file_path.replace('.bidz',f'.stl')
+        if self.bool_grid:
+            bid3d = Bid3D()
+            bid3d.grid_bid = self.grid_bid
+            bid3d.grid_colors = self.grid_colors
+            bid3d.grid_width = self.grid_width
+            bid3d.grid_height = self.grid_height
+            bid3d.export_stl(file_stl)
 
     def open_folder(self):
         if self.file_path != '':
