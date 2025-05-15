@@ -17,7 +17,7 @@ from class_carrousel import SymbolCarrousel, BidCarrousel
 from class_splashscreen import SplashScreen
 from class_bid_3d import Bid3D
 
-VERSION='1.09'
+VERSION='1.10'
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -464,6 +464,8 @@ class ImageEditorApp(BidFile, ActionState):
     def save_stl(self):
         if self.file_path == '':
             file_stl = filedialog.asksaveasfilename(title="Save STL File", filetypes=[("STL Files", "*.stl")])
+            if not file_stl.endswith('.stl'):
+                self.file_path += '.stl'
         else:
             file_stl = self.file_path.replace('.bidz',f'.stl')
         if self.bool_grid:
