@@ -16,25 +16,22 @@ class Bid3D(BidFile):
         self.elevation_templates = {
             "Plat": np.zeros((1, 1)),
             "Pyramide": np.array([
-                [0, 0, 0, 0, 0],
-                [0, 1, 2, 1, 0],
-                [0, 2, 3, 2, 0],
-                [0, 1, 2, 1, 0],
-                [0, 0, 0, 0, 0]
+                [0, 0, 0, 0],
+                [0, 1, 1, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0]
             ]),
             "Colline": np.array([
-                [0, 0, 0, 0, 0],
-                [0, 1, 2, 1, 0],
-                [0, 2, 3, 2, 0],
-                [0, 1, 2, 1, 0],
-                [0, 0, 0, 0, 0]
+                [0, 1, 1, 0],
+                [1, 2, 2, 1],
+                [1, 2, 2, 1],
+                [0, 1, 1, 0]
             ]),
             "Montagne": np.array([
-                [0, 0, 0, 0, 0],
-                [0, 1, 3, 1, 0],
-                [0, 3, 5, 3, 0],
-                [0, 1, 3, 1, 0],
-                [0, 0, 0, 0, 0]
+                [0, 1, 1, 0],
+                [1, 3, 3, 1],
+                [1, 3, 3, 1],
+                [0, 1, 1, 0]
             ])
         }
         
@@ -74,12 +71,14 @@ class Bid3D(BidFile):
         
         # Appliquer le template d'élévation actuel
         template = self.elevation_templates[elevation_name]
+        template_height, template_width = template.shape
         elevation_matrix = np.zeros((self.grid_height, self.grid_width))
         
+        # Répéter le motif d'élévation sur toute la grille
         for row in range(self.grid_height):
             for col in range(self.grid_width):
-                template_row = row % template.shape[0]
-                template_col = col % template.shape[1]
+                template_row = row % template_height
+                template_col = col % template_width
                 elevation_matrix[row][col] = template[template_row][template_col] + 1
         
         # Parcourir toutes les cellules
@@ -155,8 +154,8 @@ class Bid3D(BidFile):
             # Sauvegarder le fichier STL
             model.save(file_path)
 
-    def cell_triangle(self, x, y, color, ax, shape, height=1.0):
-        """Draw a triangle cell"""
+    def cell_triangle(self, x, y, color, ax, shape, height=1.0, edge_color=(0.7, 0.7, 0.7, 1.0)):
+        """Draw a triangle cell with custom edge color"""
         current_triangle = {
             'color': [[x + p[0], y + p[1], p[2]] for p in self.triangle_defs[shape]['color']],
             'white': [[x + p[0], y + p[1], p[2]] for p in self.triangle_defs[shape]['white']]
@@ -186,12 +185,12 @@ class Bid3D(BidFile):
                 [face], 
                 facecolors=color + (1.0,),
                 linewidths=1,
-                edgecolors=(0.7, 0.7, 0.7, 1.0),
+                edgecolors=edge_color,
                 zsort='min'
             ))
 
-    def cell_entire(self, x, y, color, ax, height=1.0):
-        """Draw a full cell"""
+    def cell_entire(self, x, y, color, ax, height=1.0, edge_color=(0.7, 0.7, 0.7, 1.0)):
+        """Draw a full cell with custom edge color"""
         vertices = [
             [x, y, 0], [x+1, y, 0], [x+1, y+1, 0], [x, y+1, 0],  # base
             [x, y, height], [x+1, y, height], [x+1, y+1, height], [x, y+1, height]  # top
@@ -208,7 +207,7 @@ class Bid3D(BidFile):
 
         collection = Poly3DCollection(faces, zsort='min')
         collection.set_facecolor(color)
-        collection.set_edgecolor((0.7, 0.7, 0.7, 1.0))
+        collection.set_edgecolor(edge_color)
         ax.add_collection3d(collection)
 
     def open_bid(self):
