@@ -12,32 +12,84 @@ class Bid3D(BidFile):
         self.grid_width = 0
         self.grid_height = 0
         
+        # Paramètres de hauteur (valeurs par défaut)
+        self.white_cell_height = 0.45
+        self.black_cell_height = 0.50
+        
         # Templates d'élévation
         self.elevation_templates = {
-            "Plat": np.zeros((1, 1)),
+            "Plat": np.zeros((8, 8)),  # Uniformiser la taille à 8x8
             "Pyramide": np.array([
-                [0, 0, 0, 0],
-                [0, 1, 1, 0],
-                [0, 1, 1, 0],
-                [0, 0, 0, 0]
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 1, 1, 1, 1, 1, 0],
+                [0, 1, 2, 2, 2, 2, 1, 0],
+                [0, 1, 2, 3, 3, 2, 1, 0],
+                [0, 1, 2, 3, 3, 2, 1, 0],
+                [0, 1, 2, 2, 2, 2, 1, 0],
+                [0, 1, 1, 1, 1, 1, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0]
             ]),
             "Colline": np.array([
-                [0, 1, 1, 0],
-                [1, 2, 2, 1],
-                [1, 2, 2, 1],
-                [0, 1, 1, 0]
+                [0, 0, 1, 1, 1, 1, 0, 0],
+                [0, 1, 2, 2, 2, 2, 1, 0],
+                [1, 2, 3, 3, 3, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 2, 3, 3, 3, 3, 2, 1],
+                [0, 1, 2, 2, 2, 2, 1, 0],
+                [0, 0, 1, 1, 1, 1, 0, 0]
             ]),
             "Montagne": np.array([
-                [0, 1, 1, 0],
-                [1, 3, 3, 1],
-                [1, 3, 3, 1],
-                [0, 1, 1, 0]
+                [0, 0, 1, 1, 1, 1, 0, 0],
+                [0, 1, 2, 3, 3, 2, 1, 0],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [1, 3, 4, 5, 5, 4, 3, 1],
+                [1, 3, 4, 5, 5, 4, 3, 1],
+                [1, 2, 3, 4, 4, 3, 2, 1],
+                [0, 1, 2, 3, 3, 2, 1, 0],
+                [0, 0, 1, 1, 1, 1, 0, 0]
+            ]),
+            "Vallée": np.array([
+                [5, 4, 3, 2, 2, 3, 4, 5],
+                [4, 3, 2, 1, 1, 2, 3, 4],
+                [3, 2, 1, 0, 0, 1, 2, 3],
+                [2, 1, 0, 0, 0, 0, 1, 2],
+                [2, 1, 0, 0, 0, 0, 1, 2],
+                [3, 2, 1, 0, 0, 1, 2, 3],
+                [4, 3, 2, 1, 1, 2, 3, 4],
+                [5, 4, 3, 2, 2, 3, 4, 5]
+            ]),
+            "Cratère": np.array([
+                [3, 3, 3, 3, 3, 3, 3, 3],
+                [3, 2, 2, 2, 2, 2, 2, 3],
+                [3, 2, 1, 1, 1, 1, 2, 3],
+                [3, 2, 1, 0, 0, 1, 2, 3],
+                [3, 2, 1, 0, 0, 1, 2, 3],
+                [3, 2, 1, 1, 1, 1, 2, 3],
+                [3, 2, 2, 2, 2, 2, 2, 3],
+                [3, 3, 3, 3, 3, 3, 3, 3]
+            ]),
+            "Vagues": np.array([
+                [0, 1, 2, 3, 0, 1, 2, 3],
+                [1, 2, 3, 2, 1, 2, 3, 2],
+                [2, 3, 2, 1, 2, 3, 2, 1],
+                [3, 2, 1, 0, 3, 2, 1, 0],
+                [0, 1, 2, 3, 0, 1, 2, 3],
+                [1, 2, 3, 2, 1, 2, 3, 2],
+                [2, 3, 2, 1, 2, 3, 2, 1],
+                [3, 2, 1, 0, 3, 2, 1, 0]
+            ]),
+            "Escalier": np.array([
+                [0, 0, 1, 1, 2, 2, 3, 3],
+                [0, 0, 1, 1, 2, 2, 3, 3],
+                [1, 1, 2, 2, 3, 3, 4, 4],
+                [1, 1, 2, 2, 3, 3, 4, 4],
+                [2, 2, 3, 3, 4, 4, 5, 5],
+                [2, 2, 3, 3, 4, 4, 5, 5],
+                [3, 3, 4, 4, 5, 5, 6, 6],
+                [3, 3, 4, 4, 5, 5, 6, 6]
             ])
         }
-        
-        # Paramètres de hauteur
-        self.white_cell_height = 0.20
-        self.black_cell_height = 0.25
         
         # Définition des triangles
         self.triangle_defs = {
@@ -59,27 +111,51 @@ class Bid3D(BidFile):
             }
         }
 
+    def cell_heightmap(self, row, col, elevation_name="Plat"):
+        """Calcule la hauteur d'une cellule en fonction du template d'élévation"""
+        template = self.elevation_templates[elevation_name]
+        template_height, template_width = template.shape
+        grid_center_row = self.grid_height // 2
+        grid_center_col = self.grid_width // 2
+        
+        # Calcul des positions relatives au centre
+        rel_row = row - (grid_center_row - template_height // 2)
+        rel_col = col - (grid_center_col - template_width // 2)
+        
+        # Application du modulo pour répétition
+        template_row = rel_row % template_height
+        template_col = rel_col % template_width
+        
+        return template[template_row][template_col]
+
     def export_stl(self, file_path, elevation_name="Plat"):
         """Exporte uniquement les parties noires du modèle 3D au format STL"""
         if self.grid_bid is None:
             return False
 
+        # Appliquer le template d'élévation comme dans update_3d_view
+        template = self.elevation_templates[elevation_name]
+        template_height, template_width = template.shape
+        
+        # Créer une matrice d'élévation pour toute la grille
+        elevation_matrix = np.zeros((self.grid_height, self.grid_width))
+        
+        # Calculer les facteurs d'échelle pour étirer le template sur toute la grille
+        scale_y = self.grid_height / template_height
+        scale_x = self.grid_width / template_width
+        
+        # Appliquer le template mis à l'échelle
+        for row in range(self.grid_height):
+            for col in range(self.grid_width):
+                # Calculer les positions proportionnelles dans le template
+                template_row = int((row / scale_y) % template_height)
+                template_col = int((col / scale_x) % template_width)
+                elevation_matrix[row][col] = template[template_row][template_col]
+
         # Collecter tous les triangles du modèle
         vertices = []
         faces = []
         vertex_count = 0
-        
-        # Appliquer le template d'élévation actuel
-        template = self.elevation_templates[elevation_name]
-        template_height, template_width = template.shape
-        elevation_matrix = np.zeros((self.grid_height, self.grid_width))
-        
-        # Répéter le motif d'élévation sur toute la grille
-        for row in range(self.grid_height):
-            for col in range(self.grid_width):
-                template_row = row % template_height
-                template_col = col % template_width
-                elevation_matrix[row][col] = template[template_row][template_col] + 1
         
         # Parcourir toutes les cellules
         for row in range(self.grid_height):
@@ -91,7 +167,9 @@ class Bid3D(BidFile):
                     
                     # Ne traiter que les cellules noires (color_code > 0)
                     if color_code > 0:
-                        height = self.black_cell_height * (1 + elevation_matrix[row][col])
+                        # Calculer la hauteur avec le template mis à l'échelle
+                        base_height = self.black_cell_height
+                        height = base_height * (1 + elevation_matrix[row][col])
                         
                         if cell_type <= 1:
                             # Pour les cubes noirs
